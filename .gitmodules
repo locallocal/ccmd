@@ -1,0 +1,3 @@
+[submodule "third/cflag"]
+	path = third/cflag
+	url = https://github.com/locallocal/cflag.git
