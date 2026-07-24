@@ -1,108 +1,88 @@
-#/bin/bash
-function build_ccmd {
-    if [ -d ./build ];then
-	echo "remove old build directory."
-        rm -rf ./build
-    fi
+#!/usr/bin/env bash
 
-    cmake_command="$CMAKE_COMMAND -B build"
-    ${cmake_command}
-    build_command="cmake --build build"
-    ${build_command}
-    if [ $? -eq 0 ];then
-	echo "build sucessfully"
-    else
-	echo "build failed"
+set -euo pipefail
+
+readonly BUILD_DIR="build"
+readonly COVERAGE_DIR="cov"
+
+print_help() {
+    printf '%s\n' \
+        "Usage: ./build.sh [option]" \
+        "" \
+        "Options:" \
+        "  --release  Configure and build an optimized binary (default)." \
+        "  --debug    Configure and build with debug symbols." \
+        "  --test     Configure, build, and run the test suite." \
+        "  --cov      Run tests and generate an HTML coverage report." \
+        "  --clean    Remove generated build and coverage directories." \
+        "  --help     Show this help message."
+}
+
+require_command() {
+    if ! command -v "$1" >/dev/null 2>&1; then
+        printf 'error: required command "%s" was not found.\n' "$1" >&2
+        exit 1
     fi
 }
 
-function run_test {
-    if [ ! -f "./build/bin/ccmd-test" ];then
-	echo "please run build with --debug firstly."
-	exit 1
-    fi
-    ./build/bin/ccmd-test
+configure_and_build() {
+    local build_type="$1"
+    shift
+    cmake -S . -B "${BUILD_DIR}" -DCMAKE_BUILD_TYPE="${build_type}" "$@"
+    cmake --build "${BUILD_DIR}" --parallel
 }
 
-function run_coverage {
-    type lcov > /dev/null 2>&1
-    if [ $? -ne 0 ];then
-        echo "lcov command not found, please install it."
-	exit 1
-    fi
-
-    if [ ! -f "./build/CMakeFiles/ccmd.dir/src/ccmd.cc.gcda" ];then
-        echo "please build with debug and runnint unit test firstly."
-	exit 1
-    fi
-    lcov -c -o ccmd.info -d ./build/CMakeFiles/ccmd.dir/src
-    genhtml ccmd.info -o cov 
-    rm -rf ccmd.info
+run_tests() {
+    configure_and_build Debug -DCCMD_BUILD_TESTS=ON "$@"
+    ctest --test-dir "${BUILD_DIR}" --output-on-failure
 }
 
-function clean {
-    echo "remove \"./build\" directory."
-    rm -rf ./build
-    echo "remove \"./cov\" directory."
-    rm -rf ./cov
+main() {
+    local action="${1:---release}"
+
+    if [[ $# -gt 1 ]]; then
+        print_help >&2
+        exit 1
+    fi
+
+    case "${action}" in
+        --release)
+            require_command cmake
+            configure_and_build Release -DCCMD_BUILD_TESTS=OFF -DCCMD_ENABLE_COVERAGE=OFF
+            ;;
+        --debug)
+            require_command cmake
+            configure_and_build Debug -DCCMD_BUILD_TESTS=OFF -DCCMD_ENABLE_COVERAGE=OFF
+            ;;
+        --test)
+            require_command cmake
+            run_tests -DCCMD_ENABLE_COVERAGE=OFF
+            ;;
+        --cov)
+            require_command cmake
+            require_command lcov
+            require_command genhtml
+            run_tests -DCCMD_ENABLE_COVERAGE=ON
+            lcov --capture --directory "${BUILD_DIR}" --output-file "${BUILD_DIR}/ccmd.info"
+            lcov --remove "${BUILD_DIR}/ccmd.info" '/usr/*' '*/third/*' '*/tests/*' \
+                --output-file "${BUILD_DIR}/ccmd.filtered.info"
+            genhtml "${BUILD_DIR}/ccmd.filtered.info" --output-directory "${COVERAGE_DIR}"
+            printf 'Coverage report: %s/index.html\n' "${COVERAGE_DIR}"
+            ;;
+        --clean)
+            require_command cmake
+            cmake -E remove_directory "${BUILD_DIR}"
+            cmake -E remove_directory "${COVERAGE_DIR}"
+            ;;
+        --help)
+            print_help
+            ;;
+        *)
+            printf 'error: unknown option "%s".\n\n' "${action}" >&2
+            print_help >&2
+            exit 1
+            ;;
+    esac
 }
 
-BUILD_TYPE="--release"
-if [ $# -eq 1 ];then
-    BUILD_TYPE=$1
-fi
-
-if [ "${BUILD_TYPE}" == "--help" ];then
-    echo "Usage: build.sh [options]"
-    echo ""
-    echo " --debug    build with debug options."
-    echo " --test     run unit tests after debug build."
-    echo " --cov      run source code coverage test after runing tests."
-    echo " --clean    remove build and cov directory."
-    exit 0
-fi
-
-type cmake > /dev/null 2>&1
-if [ $? -ne 0 ];then
-    echo "cmake command not found. please install it."
-    exit 1
-fi
-
-CMAKE_COMMAND="cmake"
-if [ "${BUILD_TYPE}" == "--debug" ];then
-    CMAKE_COMMAND="${CMAKE_COMMAND} -DCMAKE_BUILD_TYPE=debug"
-    
-    if [ !$(type lcov) ];then
-        echo "lcov command not found. please install it."
-	exit 1
-    fi
-fi
-
-case "${BUILD_TYPE}" in
-    --release)
-	echo "start to build ccmd release."
-	build_ccmd "${CMAKE_COMMAND}"
-	;;
-    --debug)
-        echo "start to build ccmd debug."
-	build_ccmd "${CMAKE_COMMAND}"
-	;;
-    --test)
-	echo "start to run unit tests."
-	run_test
-	;;
-    --cov)
-	echo "start to run source coverage test."
-	run_coverage
-	;;
-    --clean)
-	echo "start to clean."
-	clean
-	;;
-    *)
-        echo "invalid options."
-	exit 1
-	;;
-esac
-
-
+main "$@"

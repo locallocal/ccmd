@@ -48,7 +48,7 @@ std::shared_ptr<ccmd::c_command> register_commands() {
 }
 
 void root_run(std::shared_ptr<ccmd::c_command> cmd) {
-    std::cout << "this is a example." << std::endl;
+    std::cout << "This is the ccmd example." << std::endl;
 }
 
 void add_master_command(std::shared_ptr<ccmd::c_command> cmd) {
@@ -85,7 +85,7 @@ void add_meta_command(std::shared_ptr<ccmd::c_command> cmd) {
 void add_storage_command(std::shared_ptr<ccmd::c_command> cmd) {
     std::shared_ptr<ccmd::c_command> storage_cmd = std::make_shared<ccmd::c_command>(
         /* name       */ "storage",
-        /* example    */ "example storage --conf=./storage.conf --port=100001.",
+        /* example    */ "example storage --conf=./storage.conf --port=10001.",
         /* usage      */ "storage [--master=127.0.0.1:9999] [--conf=./storage.conf] [--port=port] [-d/--daemon].",
         /* help_long  */ "start a storage server.",
         /* help_short */ "start a storage server.",

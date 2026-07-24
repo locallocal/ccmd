@@ -15,11 +15,19 @@
 #include "ccmd.h"
 
 std::string &ccmd::c_command::string_var(const char *name) {
-    std::string var_name = name;
+    const std::string var_name = name;
     return string_var(var_name);
 }
 
 std::string &ccmd::c_command::string_var(std::string &name) {
+    return string_var(static_cast<const std::string &>(name));
+}
+
+std::string &ccmd::c_command::string_var(const std::string &name) {
+    return const_cast<std::string &>(static_cast<const c_command &>(*this).string_var(name));
+}
+
+const std::string &ccmd::c_command::string_var(const std::string &name) const {
     auto it = string_vars_.find(name);
     if (it != string_vars_.end()) {
         return *(it->second);
@@ -50,6 +58,12 @@ void ccmd::c_command::string_varp(const char *name, const char *short_name, cons
 }
 
 void ccmd::c_command::string_var(std::string &name, std::string &default_value, std::string &usage) {
+    string_var(static_cast<const std::string &>(name), static_cast<const std::string &>(default_value),
+        static_cast<const std::string &>(usage));
+}
+
+void ccmd::c_command::string_var(const std::string &name, const std::string &default_value,
+        const std::string &usage) {
     std::shared_ptr<std::string> var = std::make_shared<std::string>();
     auto it = string_vars_.find(name);
     if (it != string_vars_.end()) {
@@ -57,11 +71,21 @@ void ccmd::c_command::string_var(std::string &name, std::string &default_value, 
         exit(EXIT_FAILURE);
     }
     string_vars_[name] = var;
-    flag_set_->string_var(var.get(), name, default_value, usage);
+    std::string mutable_name = name;
+    std::string mutable_default_value = default_value;
+    std::string mutable_usage = usage;
+    flag_set_->string_var(var.get(), mutable_name, mutable_default_value, mutable_usage);
+    remember_flag_(name, "", "string", default_value, usage, true);
 }
 
 void ccmd::c_command::string_varp(std::string &name, std::string &short_name, std::string &default_value,
         std::string &usage) {
+    string_varp(static_cast<const std::string &>(name), static_cast<const std::string &>(short_name),
+        static_cast<const std::string &>(default_value), static_cast<const std::string &>(usage));
+}
+
+void ccmd::c_command::string_varp(const std::string &name, const std::string &short_name,
+        const std::string &default_value, const std::string &usage) {
     std::shared_ptr<std::string> var = std::make_shared<std::string>();
     if (name.size()) {
         auto it = string_vars_.find(name);
@@ -80,5 +104,11 @@ void ccmd::c_command::string_varp(std::string &name, std::string &short_name, st
         }
         string_short_vars_[short_name] = var;
     }
-    flag_set_->string_varp(var.get(), name, short_name, default_value, usage);
+    std::string mutable_name = name;
+    std::string mutable_short_name = short_name;
+    std::string mutable_default_value = default_value;
+    std::string mutable_usage = usage;
+    flag_set_->string_varp(
+        var.get(), mutable_name, mutable_short_name, mutable_default_value, mutable_usage);
+    remember_flag_(name, short_name, "string", default_value, usage, true);
 }
