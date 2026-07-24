@@ -14,6 +14,7 @@
 
 #include "ccmd.h"
 #include <gtest/gtest.h>
+#include <stdexcept>
 
 void test_run(std::shared_ptr<ccmd::c_command> cmd) {
     return;
@@ -122,6 +123,62 @@ TEST(test_common, test_cmd_args) {
 
     EXPECT_EQ(1, root_cmd->args().size());
     EXPECT_STREQ("arg00", root_cmd->args().at(0).c_str());
+}
+
+TEST(test_common, test_repeated_execute_resets_positional_args) {
+    auto root_cmd = std::make_shared<ccmd::c_command>(
+        "test",
+        "test [options].",
+        "test [options].",
+        "A command that can be executed more than once.",
+        "test command.",
+        test_run
+    );
+
+    std::vector<std::string> first_arguments = {"test", "first"};
+    root_cmd->execute(first_arguments);
+    ASSERT_EQ(1, root_cmd->args().size());
+    EXPECT_EQ("first", root_cmd->args().front());
+
+    const std::vector<std::string> second_arguments = {"test", "second"};
+    root_cmd->execute(second_arguments);
+    ASSERT_EQ(1, root_cmd->args().size());
+    EXPECT_EQ("second", root_cmd->args().front());
+}
+
+TEST(test_common, test_const_string_api) {
+    const std::string name = "test";
+    const std::string example = "test [options].";
+    const std::string usage = "test [--host=host].";
+    const std::string help_long = "A const-friendly command.";
+    const std::string help_short = "test command.";
+    const std::string flag_name = "host";
+    const std::string default_value = "127.0.0.1";
+    const std::string flag_usage = "server address";
+    const std::string count_name = "count";
+
+    auto root_cmd = std::make_shared<ccmd::c_command>(
+        name, example, usage, help_long, help_short, test_run);
+    root_cmd->string_var(flag_name, default_value, flag_usage);
+    root_cmd->int_var(count_name, 2, "item count");
+
+    const std::vector<std::string> arguments = {"test", "--host=0.0.0.0"};
+    root_cmd->execute(arguments);
+
+    const ccmd::c_command &command = *root_cmd;
+    EXPECT_EQ("0.0.0.0", command.string_var(flag_name));
+    EXPECT_EQ(2, command.int_var(count_name));
+    EXPECT_EQ(name, command.name());
+}
+
+TEST(test_common, test_invalid_execution_input) {
+    auto root_cmd = std::make_shared<ccmd::c_command>(
+        "test", "test.", "test.", "A test command.", "test command.");
+
+    const std::vector<std::string> empty_arguments;
+    EXPECT_THROW(root_cmd->execute(empty_arguments), std::invalid_argument);
+    EXPECT_THROW(root_cmd->execute(0, nullptr), std::invalid_argument);
+    EXPECT_THROW(root_cmd->add_subcommand(nullptr), std::invalid_argument);
 }
 
 TEST(test_common, test_cmd_not_found) {
@@ -261,7 +318,7 @@ TEST(test_common, test_subcmd_help_no_ccmd) {
     root_cmd->bool_varp("verson", "v", false, "show command version.");
 
     std::vector<std::string> arguments = {"test", "help"};
-    EXPECT_EXIT(root_cmd->execute(arguments), testing::ExitedWithCode(EXIT_FAILURE), ".*help.*");
+    EXPECT_EXIT(root_cmd->execute(arguments), testing::ExitedWithCode(EXIT_SUCCESS), "");
 }
 
 TEST(test_common, test_subcmd_help_not_found) {

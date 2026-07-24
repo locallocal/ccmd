@@ -1,135 +1,163 @@
 # ccmd
-ccmd is a command line parser for C++11 and beyond that provides a rich feature set with a simple and intuitive interface.
 
-# 1.How to use
+`ccmd` is a small command-line parser for C++11 and later. It supports nested
+commands, long and short options, positional arguments, generated help, and
+`bool`, `int`, `float`, and `string` values.
+
+## Quick start
+
+Clone the repository with its parser dependency:
+
+```bash
+git clone --recurse-submodules https://github.com/locallocal/ccmd.git
+cd ccmd
+./build.sh
+./build/ccmd-example --help
 ```
-std::shared_ptr<ccmd::c_command> register_commands() {
-    std::shared_ptr<ccmd::c_command> root_cmd = std::make_shared<ccmd::c_command>(
-        /* name       */ "example",
-        /* example    */ "example meta [options].",
-        /* usage      */ "example [subcommand] [options].",
-        /* help_long  */ "example is a tutorial of ccmd.",
-        /* help_short */ "example command.",
-        /* run        */ root_run
-    );
-    root_cmd->bool_varp("version", "v", false, "show version.");
-    root_cmd->bool_var("verbose", false, "show verbose.");
 
-    return root_cmd;
+Create commands with `std::make_shared` because callbacks receive the active
+command as a `std::shared_ptr`:
+
+```cpp
+#include <ccmd.h>
+
+#include <iostream>
+#include <memory>
+
+int main(int argc, char *argv[]) {
+    auto root = std::make_shared<ccmd::c_command>(
+        "server",
+        "server start --port=8080",
+        "server <command> [options]",
+        "Manage the example server.",
+        "server management"
+    );
+
+    auto start = std::make_shared<ccmd::c_command>(
+        "start",
+        "server start --port=8080",
+        "server start [options]",
+        "Start the server process.",
+        "start the server",
+        [](const std::shared_ptr<ccmd::c_command> &command) {
+            std::cout << "port: " << command->int_var("port") << '\n';
+        }
+    );
+    start->int_varp("port", "p", 8080, "server port");
+    root->add_subcommand(start);
+
+    root->execute(argc, argv);
 }
 ```
 
-Run example after buiding.
-```
-# ./build/bin/ccmd-example --help
-command example:
-  example is a tutorial of ccmd.
+Supported option forms:
 
-example:
-  example meta [options].
-
-usage:
-  example [subcommand] [options].
-
-subcommands:
-  master	start a master server.
-  meta	start a meta server.
-  storage	start a storage server.
-
-options:
-     --verbose[bool]	show verbose.(false)
- -v  --version[bool]	show version.(false)
+```text
+--port=8080       long option with a value
+-p 8080           short option with a value
+-p8080            compact short option
+--verbose         boolean option (equivalent to --verbose=true)
+-abc              combined short boolean options
+--                stop parsing options
 ```
 
-# 2.How to build
-- build release or debug.
-```
-# ./build.sh
-# ./build.sh --debug
-```
+Use `-h`, `--help`, or `help [command]` to display generated help.
 
-- run tests after build.
-```
-./build.sh --test
-```
+## Build and test
 
-- run source code coverage analysis after run tests.
-```
-# ./build.sh --cov
-# ll cov
-```
+Requirements:
 
-- clean directory.
-```
-# ./build.sh --clean
+- A C++11-compatible compiler
+- CMake 3.16 or newer
+- Git submodules initialized with
+  `git submodule update --init --recursive`
+
+The convenience script covers the common workflows:
+
+```bash
+./build.sh             # release build
+./build.sh --debug     # debug build
+./build.sh --test      # build and run tests
+./build.sh --cov       # test and generate cov/index.html
+./build.sh --clean
 ```
 
+The test command uses an installed GoogleTest package when available and
+downloads the pinned test dependency otherwise.
 
-# 3.API
-## 3.1 cmd 
-- `void execute(int argc, char *argv[]);`
+Equivalent CMake commands:
 
-- `void execute(std::vector<std::string> &arguments);`
+```bash
+cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+cmake --build build --parallel
 
-- `void add_subcommand(std::shared_ptr<c_command> cmd);`
+cmake -S . -B build -DCCMD_BUILD_TESTS=ON
+cmake --build build --parallel
+ctest --test-dir build --output-on-failure
+```
 
-- `void print_help();`
+Available CMake options:
 
-- `void print_sub_command();`
+| Option | Default | Purpose |
+| --- | --- | --- |
+| `CCMD_BUILD_EXAMPLES` | On for top-level builds | Build `ccmd-example` |
+| `CCMD_BUILD_TESTS` | Off | Build the GoogleTest suite |
+| `CCMD_FETCH_TEST_DEPS` | On | Fetch GoogleTest if it is unavailable |
+| `CCMD_ENABLE_COVERAGE` | Off | Enable GCC/Clang coverage instrumentation |
 
-- `void print_flag_set();`
+## Use from another CMake project
 
-## 3.2 bool flag
-- `bool bool_var(const char *name);`
+Install the library:
 
-- `bool bool_var(std::string &name);`
+```bash
+cmake -S . -B build -DCCMD_BUILD_EXAMPLES=OFF
+cmake --build build --parallel
+cmake --install build --prefix /path/to/prefix
+```
 
-- `void bool_var(const char *name, bool default_value, const char *usage);`
+Then consume the exported target:
 
-- `void bool_varp(const char *name, const char *short_name, bool default_value, const char *usage);`
+```cmake
+find_package(ccmd CONFIG REQUIRED)
+target_link_libraries(my_app PRIVATE ccmd::ccmd)
+```
 
-- `void bool_var(std::string &name, bool default_value, std::string &usage);`
+The project can also be included with `add_subdirectory`; examples are disabled
+automatically when `ccmd` is not the top-level project.
 
-- `void bool_varp(std::string &name, std::string &short_name, bool default_value, std::string &usage);`
- 
+## API overview
 
-## 3.3 int flag
-- `int int_var(const char *name);`
+### Commands
 
-- `int int_var(std::string &name);`
+```cpp
+void execute(int argc, char *argv[]);
+void execute(const std::vector<std::string> &arguments);
+void add_subcommand(std::shared_ptr<c_command> command);
+std::vector<std::string> &args();
+void print_help();
+```
 
-- `void int_var(const char *name, int default_value, const char *usage);`
+`args()` contains positional arguments and is reset before every execution.
+Invalid empty input throws `std::invalid_argument`.
 
-- `void int_varp(const char *name, const char *short_name, int default_value, const char *usage);`
+### Options
 
-- `void int_var(std::string &name, int default_value, std::string &usage);`
+Each value type has a registration function, a registration function with a
+short name (the `p` suffix), and a getter:
 
-- `void int_varp(std::string &name, std::string &short_name, int default_value, std::string &usage);`
+```cpp
+command->bool_varp("verbose", "v", false, "enable verbose logging");
+command->int_varp("port", "p", 8080, "server port");
+command->float_var("ratio", 0.5F, "sampling ratio");
+command->string_varp("config", "c", "server.conf", "configuration file");
 
-## 3.4 float flag
-- `float float_var(const char *name);`
+bool verbose = command->bool_var("verbose");
+int port = command->int_var("p"); // long and short names both work
+```
 
-- `float float_var(std::string &name);`
+Both string literals and `const std::string` values are accepted throughout the
+public API.
 
-- `void float_var(const char *name, float default_value, const char *usage);`
+## License
 
-- `void float_varp(const char *name, const char *short_name, float default_value, const char *usage);`
-
-- `void float_var(std::string &name, float default_value, std::string &usage);`
-
-- `void float_varp(std::string &name, std::string &short_name, float default_value, std::string &usage);`
- 
-
-## 3.5 string flag
-- `std::string &string_var(const char *name);`
-
-- `std::string &string_var(std::string &name);`
-
-- `void string_var(const char *name, const char *default_value, const char *usage);`
-
-- `void string_varp(const char *name, const char *short_name, const char *default_value, const char *usage);`
-
-- `void string_var(std::string &name, std::string &default_value, std::string &usage);`
-
-- `void string_varp(std::string &name, std::string &short_name, std::string &default_value, std::string &usage);`
-
+Apache License 2.0. See [LICENSE](LICENSE).

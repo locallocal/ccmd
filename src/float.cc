@@ -14,12 +14,22 @@
 
 #include "ccmd.h"
 
+#include <sstream>
+
 float ccmd::c_command::float_var(const char *name) {
-    std::string var_name = name;
+    const std::string var_name = name;
     return float_var(var_name);
 }
 
 float ccmd::c_command::float_var(std::string &name) {
+    return float_var(static_cast<const std::string &>(name));
+}
+
+float ccmd::c_command::float_var(const std::string &name) {
+    return static_cast<const c_command &>(*this).float_var(name);
+}
+
+float ccmd::c_command::float_var(const std::string &name) const {
     auto it = float_vars_.find(name);
     if (it != float_vars_.end()) {
         return *(it->second);
@@ -47,6 +57,10 @@ void ccmd::c_command::float_varp(const char *name, const char *short_name, float
 }
 
 void ccmd::c_command::float_var(std::string &name, float default_value, std::string &usage) {
+    float_var(static_cast<const std::string &>(name), default_value, static_cast<const std::string &>(usage));
+}
+
+void ccmd::c_command::float_var(const std::string &name, float default_value, const std::string &usage) {
     auto it = float_vars_.find(name);
     if (it != float_vars_.end()) {
         std::cerr << this->name() << " flag " << name << " already exist." << std::endl;
@@ -55,10 +69,21 @@ void ccmd::c_command::float_var(std::string &name, float default_value, std::str
 
     std::shared_ptr<float> var = std::make_shared<float>();
     float_vars_[name] = var;
-    flag_set_->float_var(var.get(), name, default_value, usage);
+    std::string mutable_name = name;
+    std::string mutable_usage = usage;
+    flag_set_->float_var(var.get(), mutable_name, default_value, mutable_usage);
+    std::ostringstream default_stream;
+    default_stream << default_value;
+    remember_flag_(name, "", "float", default_stream.str(), usage);
 }
 
 void ccmd::c_command::float_varp(std::string &name, std::string &short_name, float default_value, std::string &usage) {
+    float_varp(static_cast<const std::string &>(name), static_cast<const std::string &>(short_name), default_value,
+        static_cast<const std::string &>(usage));
+}
+
+void ccmd::c_command::float_varp(const std::string &name, const std::string &short_name, float default_value,
+        const std::string &usage) {
     std::shared_ptr<float> var = std::make_shared<float>();
     if (name.size()) {
         auto it = float_vars_.find(name);
@@ -77,5 +102,11 @@ void ccmd::c_command::float_varp(std::string &name, std::string &short_name, flo
         }
         float_short_vars_[short_name] = var;
     }
-    flag_set_->float_varp(var.get(), name, short_name, default_value, usage);
+    std::string mutable_name = name;
+    std::string mutable_short_name = short_name;
+    std::string mutable_usage = usage;
+    flag_set_->float_varp(var.get(), mutable_name, mutable_short_name, default_value, mutable_usage);
+    std::ostringstream default_stream;
+    default_stream << default_value;
+    remember_flag_(name, short_name, "float", default_stream.str(), usage);
 }

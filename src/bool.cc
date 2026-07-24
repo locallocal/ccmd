@@ -15,11 +15,19 @@
 #include "ccmd.h"
 
 bool ccmd::c_command::bool_var(const char *name) {
-    std::string flag_name = name;
+    const std::string flag_name = name;
     return bool_var(flag_name);
 }
 
 bool ccmd::c_command::bool_var(std::string &name) {
+    return bool_var(static_cast<const std::string &>(name));
+}
+
+bool ccmd::c_command::bool_var(const std::string &name) {
+    return static_cast<const c_command &>(*this).bool_var(name);
+}
+
+bool ccmd::c_command::bool_var(const std::string &name) const {
     auto it = bool_vars_.find(name);
     if (it != bool_vars_.end()) {
         return *(it->second);
@@ -48,6 +56,10 @@ void ccmd::c_command::bool_varp(const char *name, const char *short_name, bool d
 }
 
 void ccmd::c_command::bool_var(std::string &name, bool default_value, std::string &usage) {
+    bool_var(static_cast<const std::string &>(name), default_value, static_cast<const std::string &>(usage));
+}
+
+void ccmd::c_command::bool_var(const std::string &name, bool default_value, const std::string &usage) {
     auto it = bool_vars_.find(name);
     if (it != bool_vars_.end()) {
         std::cerr << this->name() << " flag " << name << " already exist." << std::endl;
@@ -56,11 +68,20 @@ void ccmd::c_command::bool_var(std::string &name, bool default_value, std::strin
 
     std::shared_ptr<bool> var= std::make_shared<bool>();
     bool_vars_[name] = var;
-    flag_set_->bool_var(var.get(), name, default_value, usage);
+    std::string mutable_name = name;
+    std::string mutable_usage = usage;
+    flag_set_->bool_var(var.get(), mutable_name, default_value, mutable_usage);
+    remember_flag_(name, "", "bool", default_value ? "true" : "false", usage);
 }
 
 void ccmd::c_command::bool_varp(std::string &name, std::string &short_name, bool default_value,
         std::string &usage) {
+    bool_varp(static_cast<const std::string &>(name), static_cast<const std::string &>(short_name), default_value,
+        static_cast<const std::string &>(usage));
+}
+
+void ccmd::c_command::bool_varp(const std::string &name, const std::string &short_name, bool default_value,
+        const std::string &usage) {
     std::shared_ptr<bool> var= std::make_shared<bool>();
     if (name.size()) {
         auto it = bool_vars_.find(name);
@@ -79,5 +100,9 @@ void ccmd::c_command::bool_varp(std::string &name, std::string &short_name, bool
         }
         bool_short_vars_[short_name] = var;
     }
-    flag_set_->bool_varp(var.get(), name, short_name, default_value, usage);
+    std::string mutable_name = name;
+    std::string mutable_short_name = short_name;
+    std::string mutable_usage = usage;
+    flag_set_->bool_varp(var.get(), mutable_name, mutable_short_name, default_value, mutable_usage);
+    remember_flag_(name, short_name, "bool", default_value ? "true" : "false", usage);
 }
