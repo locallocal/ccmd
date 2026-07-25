@@ -38,8 +38,8 @@ std::shared_ptr<ccmd::c_command> register_commands() {
         /* help_short */ "example command.",
         /* run        */ root_run
     );
-    root_cmd->bool_varp("version", "v", false, "show version.");
-    root_cmd->bool_var("verbose", false, "show verbose.");
+    root_cmd->varp<bool>("version", "v", false, "show version.");
+    root_cmd->var<bool>("verbose", false, "show verbose.");
 
     add_master_command(root_cmd);
     add_meta_command(root_cmd);
@@ -60,9 +60,9 @@ void add_master_command(std::shared_ptr<ccmd::c_command> cmd) {
         /* help_short */ "start a master server.",
         /* run        */ master_run
     );
-    master_cmd->bool_varp("daemon", "d", false, "run daemon.");
-    master_cmd->int_varp("port", "p", 9999, "set server port.");
-    master_cmd->string_varp("conf", "c", "", "configuration file.");
+    master_cmd->varp<bool>("daemon", "d", false, "run daemon.");
+    master_cmd->varp<int>("port", "p", 9999, "set server port.");
+    master_cmd->varp<std::string>("conf", "c", "", "configuration file.");
     cmd->add_subcommand(master_cmd);
 }
 
@@ -75,10 +75,10 @@ void add_meta_command(std::shared_ptr<ccmd::c_command> cmd) {
         /* help_short */ "start a meta server.",
         /* run        */ meta_run
     );
-    meta_cmd->bool_varp("daemon", "d", false, "run daemon.");
-    meta_cmd->int_varp("port", "p", 9998, "set server port.");
-    meta_cmd->string_varp("master", "m", "0.0.0.0", "master address.");
-    meta_cmd->string_varp("conf", "c", "./meta.conf", "configuration file.");
+    meta_cmd->varp<bool>("daemon", "d", false, "run daemon.");
+    meta_cmd->varp<int>("port", "p", 9998, "set server port.");
+    meta_cmd->varp<std::string>("master", "m", "0.0.0.0", "master address.");
+    meta_cmd->varp<std::string>("conf", "c", "./meta.conf", "configuration file.");
     cmd->add_subcommand(meta_cmd);
 }
 
@@ -91,10 +91,10 @@ void add_storage_command(std::shared_ptr<ccmd::c_command> cmd) {
         /* help_short */ "start a storage server.",
         /* run        */ storage_run
     );
-    storage_cmd->bool_varp("daemon", "d", false, "run daemon.");
-    storage_cmd->int_varp("port", "p", 9997, "set server port.");
-    storage_cmd->string_varp("master", "m", "0.0.0.0", "master address.");
-    storage_cmd->string_varp("conf", "c", "./storage.conf", "configuration file.");
+    storage_cmd->varp<bool>("daemon", "d", false, "run daemon.");
+    storage_cmd->varp<int>("port", "p", 9997, "set server port.");
+    storage_cmd->varp<std::string>("master", "m", "0.0.0.0", "master address.");
+    storage_cmd->varp<std::string>("conf", "c", "./storage.conf", "configuration file.");
     cmd->add_subcommand(storage_cmd);
 }
 
@@ -103,9 +103,9 @@ void master_run(std::shared_ptr<ccmd::c_command> cmd) {
         std::cout << arg << " ";
     }
     std::cout << std::endl;
-    std::cout << "daemon: " << std::boolalpha << cmd->bool_var("daemon") << std::endl;
-    std::cout << "port: " << cmd->int_var("port") << std::endl;
-    std::cout << "conf: " << cmd->string_var("conf") << std::endl;
+    std::cout << "daemon: " << std::boolalpha << cmd->var<bool>("daemon") << std::endl;
+    std::cout << "port: " << cmd->var<int>("port") << std::endl;
+    std::cout << "conf: " << cmd->var<std::string>("conf") << std::endl;
 }
 
 void meta_run(std::shared_ptr<ccmd::c_command> cmd) {
@@ -113,10 +113,10 @@ void meta_run(std::shared_ptr<ccmd::c_command> cmd) {
         std::cout << arg << " ";
     }
     std::cout << std::endl;
-    std::cout << "daemon: " << std::boolalpha << cmd->bool_var("daemon") << std::endl;
-    std::cout << "port: " << cmd->int_var("port") << std::endl;
-    std::cout << "master: " << cmd->string_var("master") << std::endl;
-    std::cout << "conf: " << cmd->string_var("conf") << std::endl;
+    std::cout << "daemon: " << std::boolalpha << cmd->var<bool>("daemon") << std::endl;
+    std::cout << "port: " << cmd->var<int>("port") << std::endl;
+    std::cout << "master: " << cmd->var<std::string>("master") << std::endl;
+    std::cout << "conf: " << cmd->var<std::string>("conf") << std::endl;
 }
 
 void storage_run(std::shared_ptr<ccmd::c_command> cmd) {
@@ -124,8 +124,8 @@ void storage_run(std::shared_ptr<ccmd::c_command> cmd) {
         std::cout << arg << " ";
     }
     std::cout << std::endl;
-    std::cout << "daemon: " << std::boolalpha << cmd->bool_var("daemon") << std::endl;
-    std::cout << "port: " << cmd->int_var("port") << std::endl;
-    std::cout << "master: " << cmd->string_var("master") << std::endl;
-    std::cout << "conf: " << cmd->string_var("conf") << std::endl;
+    std::cout << "daemon: " << std::boolalpha << cmd->var<bool>("daemon") << std::endl;
+    std::cout << "port: " << cmd->var<int>("port") << std::endl;
+    std::cout << "master: " << cmd->var<std::string>("master") << std::endl;
+    std::cout << "conf: " << cmd->var<std::string>("conf") << std::endl;
 }

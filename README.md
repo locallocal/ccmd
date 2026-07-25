@@ -5,14 +5,15 @@
 `ccmd` is a header-only command-line framework for C++11 and later. It adds
 commands, nested subcommands, callbacks, and generated help on top of
 [`cflag`](https://github.com/locallocal/cflag), which performs option parsing
-and value conversion.
+and value conversion. A single `var<T>` / `varp<T>` template API covers all
+supported value types.
 
 ## Features
 
 - Header-only `ccmd` API with a CMake interface target
 - Commands and arbitrarily nested subcommands
 - Long and short options
-- `bool`, `int`, `float`, and `string` option values
+- Type-safe template flags for `bool`, `int`, `float`, and `std::string`
 - Positional arguments and the `--` option terminator
 - Command callbacks and generated help
 - C++11-compatible public API
@@ -57,13 +58,13 @@ int main(int argc, char *argv[]) {
         "start a server",
         [](const std::shared_ptr<ccmd::c_command> &active) {
             std::cout << "verbose: " << std::boolalpha
-                      << active->bool_var("verbose") << '\n';
-            std::cout << "port: " << active->int_var("port") << '\n';
+                      << active->var<bool>("verbose") << '\n';
+            std::cout << "port: " << active->var<int>("port") << '\n';
         }
     );
 
-    command->bool_varp("verbose", "v", false, "enable verbose output");
-    command->int_varp("port", "p", 8080, "server port");
+    command->varp("verbose", "v", false, "enable verbose output");
+    command->varp("port", "p", 8080, "server port");
     command->execute(argc, argv);
 }
 ```
@@ -100,11 +101,11 @@ auto start = std::make_shared<ccmd::c_command>(
     "Start the server process.",
     "start the server",
     [](const std::shared_ptr<ccmd::c_command> &active) {
-        std::cout << "port: " << active->int_var("port") << '\n';
+        std::cout << "port: " << active->var<int>("port") << '\n';
     }
 );
 
-start->int_varp("port", "p", 8080, "server port");
+start->varp("port", "p", 8080, "server port");
 root->add_subcommand(start);
 root->execute(argc, argv);
 ```
@@ -114,27 +115,33 @@ option set and receives only its own positional arguments.
 
 ## Options
 
-Every supported value type provides three operations:
+Flags use the following template operations:
 
-- `*_var(name, default_value, usage)` registers a long option.
-- `*_varp(name, short_name, default_value, usage)` registers long and short
+- `var<T>(name, default_value, usage)` registers a long option.
+- `varp<T>(name, short_name, default_value, usage)` registers long and short
   names for the same option.
-- `*_var(name)` returns the parsed value.
+- `var<T>(name)` returns the parsed value and verifies its registered type.
 
 ```cpp
-command->bool_varp("verbose", "v", false, "enable verbose logging");
-command->int_varp("port", "p", 8080, "server port");
-command->float_var("ratio", 0.5F, "sampling ratio");
-command->string_varp("config", "c", "server.conf", "configuration file");
+command->varp("verbose", "v", false, "enable verbose logging");
+command->varp("port", "p", 8080, "server port");
+command->var("ratio", 0.5F, "sampling ratio");
+command->varp<std::string>(
+    "config", "c", "server.conf", "configuration file");
 
-bool verbose = command->bool_var("verbose");
-int port = command->int_var("p"); // Long and short names both work.
-float ratio = command->float_var("ratio");
-const std::string &config = command->string_var("config");
+bool verbose = command->var<bool>("verbose");
+int port = command->var<int>("p"); // Long and short names both work.
+float ratio = command->var<float>("ratio");
+std::string config = command->var<std::string>("config");
 ```
 
-Both string literals and `const std::string` values are accepted by the public
-API.
+Registration templates infer `T` from the default value. Specify
+`std::string` explicitly when the default is a string literal. The supported
+types are `bool`, `int`, `float`, and `std::string`; conversion for each type is
+delegated to `cflag`. Registering any other type produces a compile-time error.
+
+The old type-specific `bool_var`, `int_var`, `float_var`, and `string_var`
+interfaces are not provided.
 
 ### Supported option forms
 
@@ -233,9 +240,11 @@ otherwise downloads the pinned test version.
 
 ## Error handling
 
-Calling `execute` without a program name or adding a null subcommand throws
-`std::invalid_argument`. Invalid options, values, duplicate names, or unknown
-subcommands print a diagnostic and terminate with a non-zero exit status.
+Calling `execute` without a program name, adding a null subcommand, or
+registering a flag without either a long or short name throws
+`std::invalid_argument`. Invalid options, values, duplicate names, type
+mismatches, or unknown subcommands print a diagnostic and terminate with a
+non-zero exit status.
 `-h`, `--help`, and valid `help` commands terminate successfully after printing
 help.
 

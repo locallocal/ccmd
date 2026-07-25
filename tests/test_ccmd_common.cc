@@ -29,13 +29,13 @@ TEST(test_common, test_single_command) {
         /* help_short */ "test command.",
         /* run        */ test_run 
     );
-    root_cmd->string_var("host", "127.0.0.1", "test server host ip address.");
-    root_cmd->int_var("port", 9999, "test server port.");
+    root_cmd->var<std::string>("host", "127.0.0.1", "test server host ip address.");
+    root_cmd->var<int>("port", 9999, "test server port.");
     std::vector<std::string> arguments = {"test", "--host=0.0.0.0", "--port=10000"};
     root_cmd->execute(arguments);
 
-    EXPECT_STREQ("0.0.0.0", root_cmd->string_var("host").c_str());
-    EXPECT_EQ(10000, root_cmd->int_var("port"));
+    EXPECT_EQ("0.0.0.0", root_cmd->var<std::string>("host"));
+    EXPECT_EQ(10000, root_cmd->var<int>("port"));
 }
 
 TEST(test_common, test_multi_command) {
@@ -55,7 +55,7 @@ TEST(test_common, test_multi_command) {
         /* help_short */ "c00 command.",
         /* run        */ test_run 
     );
-    c00->string_var("c00", "", "c00 command option.");
+    c00->var<std::string>("c00", "", "c00 command option.");
 
     std::shared_ptr<ccmd::c_command> c01 = std::make_shared<ccmd::c_command>(
         /* name       */ "c01",
@@ -65,17 +65,17 @@ TEST(test_common, test_multi_command) {
         /* help_short */ "c01 command.",
         /* run        */ test_run 
     );
-    c01->string_var("c01", "", "c01 command option.");
+    c01->var<std::string>("c01", "", "c01 command option.");
     root_cmd->add_subcommand(c00);
     root_cmd->add_subcommand(c01);
 
     std::vector<std::string> arguments = {"test", "c00", "--c00=c00"};
     root_cmd->execute(arguments);
-    EXPECT_STREQ("c00", c00->string_var("c00").c_str());
+    EXPECT_EQ("c00", c00->var<std::string>("c00"));
     
     arguments = {"test", "c01", "--c01=c01"};
     root_cmd->execute(arguments);
-    EXPECT_STREQ("c01", c01->string_var("c01").c_str());
+    EXPECT_EQ("c01", c01->var<std::string>("c01"));
 }
 
 TEST(test_common, test_cmd_exist) {
@@ -117,7 +117,7 @@ TEST(test_common, test_cmd_args) {
         /* help_short */ "test command.",
         /* run        */ test_run 
     );
-    root_cmd->bool_varp("version", "v", false, "show command version.");
+    root_cmd->varp<bool>("version", "v", false, "show command version.");
     std::vector<std::string> arguments = {"test", "--version=true", "arg00"}; 
     root_cmd->execute(arguments);
 
@@ -159,15 +159,15 @@ TEST(test_common, test_const_string_api) {
 
     auto root_cmd = std::make_shared<ccmd::c_command>(
         name, example, usage, help_long, help_short, test_run);
-    root_cmd->string_var(flag_name, default_value, flag_usage);
-    root_cmd->int_var(count_name, 2, "item count");
+    root_cmd->var<std::string>(flag_name, default_value, flag_usage);
+    root_cmd->var<int>(count_name, 2, "item count");
 
     const std::vector<std::string> arguments = {"test", "--host=0.0.0.0"};
     root_cmd->execute(arguments);
 
     const ccmd::c_command &command = *root_cmd;
-    EXPECT_EQ("0.0.0.0", command.string_var(flag_name));
-    EXPECT_EQ(2, command.int_var(count_name));
+    EXPECT_EQ("0.0.0.0", command.var<std::string>(flag_name));
+    EXPECT_EQ(2, command.var<int>(count_name));
     EXPECT_EQ(name, command.name());
 }
 
@@ -179,6 +179,7 @@ TEST(test_common, test_invalid_execution_input) {
     EXPECT_THROW(root_cmd->execute(empty_arguments), std::invalid_argument);
     EXPECT_THROW(root_cmd->execute(0, nullptr), std::invalid_argument);
     EXPECT_THROW(root_cmd->add_subcommand(nullptr), std::invalid_argument);
+    EXPECT_THROW(root_cmd->var<int>("", 0, ""), std::invalid_argument);
 }
 
 TEST(test_common, test_cmd_not_found) {
@@ -190,7 +191,7 @@ TEST(test_common, test_cmd_not_found) {
         /* help_short */ "test command.",
         /* run        */ test_run 
     );
-    root_cmd->bool_varp("version", "v", false, "show command version.");
+    root_cmd->varp<bool>("version", "v", false, "show command version.");
     std::shared_ptr<ccmd::c_command> sub_cmd = std::make_shared<ccmd::c_command>(
         /* name       */ "sub",
         /* example    */ "sub [--host=host].",
@@ -199,7 +200,7 @@ TEST(test_common, test_cmd_not_found) {
         /* help_short */ "sub command.",
         /* run        */ test_run 
     );
-    sub_cmd->string_var("host", "0.0.0.0", "set host value.");
+    sub_cmd->var<std::string>("host", "0.0.0.0", "set host value.");
     root_cmd->add_subcommand(sub_cmd);
 
     std::vector<std::string> arguments = {"test", "show", "--version=true", "arg00", "arg01"}; 
@@ -215,7 +216,7 @@ TEST(test_common, test_cmd_help_cmd) {
         /* help_short */ "test command.",
         /* run        */ test_run 
     );
-    root_cmd->bool_varp("version", "v", false, "show command version.");
+    root_cmd->varp<bool>("version", "v", false, "show command version.");
     std::shared_ptr<ccmd::c_command> sub_cmd = std::make_shared<ccmd::c_command>(
         /* name       */ "sub",
         /* example    */ "sub [--host=host].",
@@ -224,7 +225,7 @@ TEST(test_common, test_cmd_help_cmd) {
         /* help_short */ "sub command.",
         /* run        */ test_run 
     );
-    sub_cmd->string_var("host", "0.0.0.0", "set host value.");
+    sub_cmd->var<std::string>("host", "0.0.0.0", "set host value.");
     root_cmd->add_subcommand(sub_cmd);
 
     std::vector<std::string> arguments = {"test", "help", "sub"}; 
@@ -240,7 +241,7 @@ TEST(test_common, test_cmd_help_long_flag) {
         /* help_short */ "test command.",
         /* run        */ test_run 
     );
-    root_cmd->bool_varp("version", "v", false, "show command version.");
+    root_cmd->varp<bool>("version", "v", false, "show command version.");
     std::shared_ptr<ccmd::c_command> sub_cmd = std::make_shared<ccmd::c_command>(
         /* name       */ "sub",
         /* example    */ "sub [--host=host].",
@@ -249,7 +250,7 @@ TEST(test_common, test_cmd_help_long_flag) {
         /* help_short */ "sub command.",
         /* run        */ test_run 
     );
-    sub_cmd->bool_var("host", "0.0.0.0", "set host value.");
+    sub_cmd->var<std::string>("host", "0.0.0.0", "set host value.");
     root_cmd->add_subcommand(sub_cmd);
 
     std::vector<std::string> arguments = {"test", "sub", "--help"}; 
@@ -265,7 +266,7 @@ TEST(test_common, test_cmd_help_short_flag) {
         /* help_short */ "test command.",
         /* run        */ test_run 
     );
-    root_cmd->bool_varp("version", "v", false, "show command version.");
+    root_cmd->varp<bool>("version", "v", false, "show command version.");
     std::shared_ptr<ccmd::c_command> sub_cmd = std::make_shared<ccmd::c_command>(
         /* name       */ "sub",
         /* example    */ "sub [--host=host].",
@@ -274,7 +275,7 @@ TEST(test_common, test_cmd_help_short_flag) {
         /* help_short */ "sub command.",
         /* run        */ test_run 
     );
-    sub_cmd->bool_var("host", "0.0.0.0", "set host value.");
+    sub_cmd->var<std::string>("host", "0.0.0.0", "set host value.");
     root_cmd->add_subcommand(sub_cmd);
 
     std::vector<std::string> arguments = {"test", "sub", "-h"}; 
@@ -290,7 +291,7 @@ TEST(test_common, test_subcmd_help_short_flag) {
         /* help_short */ "test command.",
         /* run        */ test_run 
     );
-    root_cmd->bool_varp("version", "v", false, "show command version.");
+    root_cmd->varp<bool>("version", "v", false, "show command version.");
     std::shared_ptr<ccmd::c_command> sub_cmd = std::make_shared<ccmd::c_command>(
         /* name       */ "sub",
         /* example    */ "sub [--host=host].",
@@ -299,7 +300,7 @@ TEST(test_common, test_subcmd_help_short_flag) {
         /* help_short */ "sub command.",
         /* run        */ test_run 
     );
-    sub_cmd->bool_var("host", "0.0.0.0", "set host value.");
+    sub_cmd->var<std::string>("host", "0.0.0.0", "set host value.");
     root_cmd->add_subcommand(sub_cmd);
 
     std::vector<std::string> arguments = {"test", "-h"}; 
@@ -315,7 +316,7 @@ TEST(test_common, test_subcmd_help_no_ccmd) {
         /* help_short */ "test command.",
         /* run        */ test_run 
     );
-    root_cmd->bool_varp("verson", "v", false, "show command version.");
+    root_cmd->varp<bool>("verson", "v", false, "show command version.");
 
     std::vector<std::string> arguments = {"test", "help"};
     EXPECT_EXIT(root_cmd->execute(arguments), testing::ExitedWithCode(EXIT_SUCCESS), "");
@@ -330,7 +331,7 @@ TEST(test_common, test_subcmd_help_not_found) {
         /* help_short */ "test command.",
         /* run        */ test_run 
     );
-    root_cmd->bool_varp("version", "v", false, "show command version.");
+    root_cmd->varp<bool>("version", "v", false, "show command version.");
     std::shared_ptr<ccmd::c_command> sub_cmd = std::make_shared<ccmd::c_command>(
         /* name       */ "sub",
         /* example    */ "sub [--host=host].",
@@ -339,7 +340,7 @@ TEST(test_common, test_subcmd_help_not_found) {
         /* help_short */ "sub command.",
         /* run        */ test_run 
     );
-    sub_cmd->bool_var("host", "0.0.0.0", "set host value.");
+    sub_cmd->var<std::string>("host", "0.0.0.0", "set host value.");
     root_cmd->add_subcommand(sub_cmd);
 
     std::vector<std::string> arguments = {"test", "help", "hello"}; 

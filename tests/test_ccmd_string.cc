@@ -23,23 +23,23 @@ TEST(test_string, test_string_flag) {
         /* usage      */ "test [-m --master=master] [--host=host].",
         /* help_long  */ "this is a string test command.",
         /* help_short */ "test command.",
-        /* run        */ test_run 
+        /* run        */ test_run
     );
-    root_cmd->string_varp("master", "m", "0.0.0.0", "master server address.");
-    root_cmd->string_var("host", "0.0.0.0", "host addresss.");
+    root_cmd->varp<std::string>("master", "m", "0.0.0.0", "master server address.");
+    root_cmd->var<std::string>("host", "0.0.0.0", "host addresss.");
     std::vector<std::string> arguments = {"test", "--master=127.0.0.1", "--host=1.0.0.1"};
     root_cmd->execute(arguments);
-    EXPECT_STREQ("127.0.0.1", root_cmd->string_var("master").c_str());
-    EXPECT_STREQ("1.0.0.1", root_cmd->string_var("host").c_str());
+    EXPECT_EQ("127.0.0.1", root_cmd->var<std::string>("master"));
+    EXPECT_EQ("1.0.0.1", root_cmd->var<std::string>("host"));
 
     arguments = {"test", "-m", "127.0.0.2", "--host=1.0.0.2"};
     root_cmd->execute(arguments);
-    EXPECT_STREQ("127.0.0.2", root_cmd->string_var("master").c_str());
-    EXPECT_STREQ("1.0.0.2", root_cmd->string_var("host").c_str());
+    EXPECT_EQ("127.0.0.2", root_cmd->var<std::string>("master"));
+    EXPECT_EQ("1.0.0.2", root_cmd->var<std::string>("host"));
 
     arguments = {"test", "-m127.0.0.3"};
     root_cmd->execute(arguments);
-    EXPECT_STREQ("127.0.0.3", root_cmd->string_var("master").c_str());
+    EXPECT_EQ("127.0.0.3", root_cmd->var<std::string>("master"));
 }
 
 TEST(test_string, test_string_already_exist_flag) {
@@ -49,11 +49,13 @@ TEST(test_string, test_string_already_exist_flag) {
         /* usage      */ "test [-m --master=master].",
         /* help_long  */ "this is a string test command.",
         /* help_short */ "test command.",
-        /* run        */ test_run 
+        /* run        */ test_run
     );
-    root_cmd->string_varp("master", "m", "0.0.0.0", "master server address.");
-    EXPECT_EXIT(root_cmd->string_varp("master", "", "", ""), testing::ExitedWithCode(EXIT_FAILURE), ".*exist.*");
-    EXPECT_EXIT(root_cmd->string_varp("", "m", "", ""), testing::ExitedWithCode(EXIT_FAILURE), ".*exist.*");
+    root_cmd->varp<std::string>("master", "m", "0.0.0.0", "master server address.");
+    EXPECT_EXIT(root_cmd->varp<std::string>("master", "", "", ""),
+        testing::ExitedWithCode(EXIT_FAILURE), ".*exist.*");
+    EXPECT_EXIT(root_cmd->varp<std::string>("", "m", "", ""),
+        testing::ExitedWithCode(EXIT_FAILURE), ".*exist.*");
 }
 
 TEST(test_string, test_string_not_found_flag) {
@@ -63,12 +65,11 @@ TEST(test_string, test_string_not_found_flag) {
         /* usage      */ "test [-m --master=master].",
         /* help_long  */ "this is a string test command.",
         /* help_short */ "test command.",
-        /* run        */ test_run 
+        /* run        */ test_run
     );
-    root_cmd->string_varp("master", "m", "0.0.0.0", "master server address.");
+    root_cmd->varp<std::string>("master", "m", "0.0.0.0", "master server address.");
     std::vector<std::string> arguments = {"test", "--master=127.0.0.1"};
     root_cmd->execute(arguments);
-    EXPECT_EXIT(root_cmd->string_var("hello"), testing::ExitedWithCode(EXIT_FAILURE), ".*found.*");
+    EXPECT_EXIT(root_cmd->var<std::string>("hello"),
+        testing::ExitedWithCode(EXIT_FAILURE), ".*found.*");
 }
-
-

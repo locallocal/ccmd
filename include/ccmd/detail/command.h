@@ -21,17 +21,6 @@
 #include <stdexcept>
 #include <utility>
 
-inline ccmd::c_command::c_command(const char *name, const char *example, const char *usage, const char *help_long,
-        const char *help_short, run_callback run)
-        : c_command(std::string(name), std::string(example), std::string(usage), std::string(help_long),
-              std::string(help_short), std::move(run)) {}
-
-inline ccmd::c_command::c_command(std::string &name, std::string &example, std::string &usage, std::string &help_long,
-        std::string &help_short, run_callback run)
-        : c_command(static_cast<const std::string &>(name), static_cast<const std::string &>(example),
-              static_cast<const std::string &>(usage), static_cast<const std::string &>(help_long),
-              static_cast<const std::string &>(help_short), std::move(run)) {}
-
 inline ccmd::c_command::c_command(const std::string &name, const std::string &example, const std::string &usage,
         const std::string &help_long, const std::string &help_short, run_callback run)
         : name_(name),
@@ -68,10 +57,6 @@ inline void ccmd::c_command::execute(int argc, char *argv[]) {
         arguments.push_back(argv[i]);
     }
     execute(arguments);
-}
-
-inline void ccmd::c_command::execute(std::vector<std::string> &arguments) {
-    execute(static_cast<const std::vector<std::string> &>(arguments));
 }
 
 inline void ccmd::c_command::execute(const std::vector<std::string> &arguments) {

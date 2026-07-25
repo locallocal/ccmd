@@ -4,14 +4,15 @@
 
 `ccmd` 是一个支持 C++11 及以上版本的 header-only 命令行框架。它在
 [`cflag`](https://github.com/locallocal/cflag) 的参数解析和类型转换能力之上，
-提供命令、嵌套子命令、回调函数以及自动生成的帮助信息。
+提供命令、嵌套子命令、回调函数以及自动生成的帮助信息。统一的
+`var<T>` / `varp<T>` 模板 API 覆盖所有受支持的值类型。
 
 ## 功能特性
 
 - header-only 的 `ccmd` API 和 CMake 接口目标
 - 支持命令和任意层级的嵌套子命令
 - 支持长选项和短选项
-- 支持 `bool`、`int`、`float` 和 `string` 类型的选项值
+- 通过类型安全模板支持 `bool`、`int`、`float` 和 `std::string`
 - 支持位置参数和 `--` 选项终止符
 - 支持命令回调和自动生成帮助信息
 - 公共 API 兼容 C++11
@@ -55,13 +56,13 @@ int main(int argc, char *argv[]) {
         "start a server",
         [](const std::shared_ptr<ccmd::c_command> &active) {
             std::cout << "verbose: " << std::boolalpha
-                      << active->bool_var("verbose") << '\n';
-            std::cout << "port: " << active->int_var("port") << '\n';
+                      << active->var<bool>("verbose") << '\n';
+            std::cout << "port: " << active->var<int>("port") << '\n';
         }
     );
 
-    command->bool_varp("verbose", "v", false, "enable verbose output");
-    command->int_varp("port", "p", 8080, "server port");
+    command->varp("verbose", "v", false, "enable verbose output");
+    command->varp("port", "p", 8080, "server port");
     command->execute(argc, argv);
 }
 ```
@@ -97,11 +98,11 @@ auto start = std::make_shared<ccmd::c_command>(
     "Start the server process.",
     "start the server",
     [](const std::shared_ptr<ccmd::c_command> &active) {
-        std::cout << "port: " << active->int_var("port") << '\n';
+        std::cout << "port: " << active->var<int>("port") << '\n';
     }
 );
 
-start->int_varp("port", "p", 8080, "server port");
+start->varp("port", "p", 8080, "server port");
 root->add_subcommand(start);
 root->execute(argc, argv);
 ```
@@ -111,26 +112,32 @@ root->execute(argc, argv);
 
 ## 选项
 
-每一种受支持的值类型都提供三种操作：
+选项使用以下模板操作：
 
-- `*_var(name, default_value, usage)`：注册长选项。
-- `*_varp(name, short_name, default_value, usage)`：为同一个选项同时注册长名称
+- `var<T>(name, default_value, usage)`：注册长选项。
+- `varp<T>(name, short_name, default_value, usage)`：为同一个选项同时注册长名称
   和短名称。
-- `*_var(name)`：读取解析后的值。
+- `var<T>(name)`：读取解析后的值，并校验读取类型是否与注册类型一致。
 
 ```cpp
-command->bool_varp("verbose", "v", false, "enable verbose logging");
-command->int_varp("port", "p", 8080, "server port");
-command->float_var("ratio", 0.5F, "sampling ratio");
-command->string_varp("config", "c", "server.conf", "configuration file");
+command->varp("verbose", "v", false, "enable verbose logging");
+command->varp("port", "p", 8080, "server port");
+command->var("ratio", 0.5F, "sampling ratio");
+command->varp<std::string>(
+    "config", "c", "server.conf", "configuration file");
 
-bool verbose = command->bool_var("verbose");
-int port = command->int_var("p"); // 长名称和短名称均可用于读取。
-float ratio = command->float_var("ratio");
-const std::string &config = command->string_var("config");
+bool verbose = command->var<bool>("verbose");
+int port = command->var<int>("p"); // 长名称和短名称均可用于读取。
+float ratio = command->var<float>("ratio");
+std::string config = command->var<std::string>("config");
 ```
 
-公共 API 同时接受字符串字面量和 `const std::string`。
+注册模板会根据默认值推导 `T`。默认值为字符串字面量时，需要显式指定
+`std::string`。目前支持 `bool`、`int`、`float` 和 `std::string`，每种类型
+的转换均委托给 `cflag`；注册其他类型会在编译期报错。
+
+旧的类型专用接口 `bool_var`、`int_var`、`float_var` 和 `string_var`
+不再提供。
 
 ### 支持的选项形式
 
@@ -229,10 +236,10 @@ ctest --test-dir build --output-on-failure
 
 ## 错误处理
 
-调用 `execute` 时没有传入程序名称，或者添加空的子命令，会抛出
-`std::invalid_argument`。无效选项、无效值、重复名称或未知子命令会输出诊断
-信息，并以非零状态码退出。`-h`、`--help` 和有效的 `help` 命令在输出帮助
-信息后会正常退出。
+调用 `execute` 时没有传入程序名称、添加空的子命令，或者注册选项时长名称和
+短名称均为空，会抛出 `std::invalid_argument`。无效选项、无效值、重复名称、
+读取类型不匹配或未知子命令会输出诊断信息，并以非零状态码退出。`-h`、
+`--help` 和有效的 `help` 命令在输出帮助信息后会正常退出。
 
 ## 许可证
 
