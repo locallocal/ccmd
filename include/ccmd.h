@@ -24,18 +24,14 @@
 
 namespace ccmd {
 
-    static const std::string k_help_command_name = "help";
-    static const std::string k_help_flag_long_name = "--help";
-    static const std::string k_help_flag_short_name = "-h";
+    namespace detail {
+        class flag_value_base;
+    }
 
     class c_command : public std::enable_shared_from_this<c_command> {
     public:
         using run_callback = std::function<void(std::shared_ptr<c_command>)>;
 
-        c_command(const char *name, const char *example, const char *usage, const char *help_long, const char *help_short,
-            run_callback run = run_callback());
-        c_command(std::string &name, std::string &example, std::string &usage, std::string &help_long,
-            std::string &help_short, run_callback run);
         c_command(const std::string &name, const std::string &example, const std::string &usage,
             const std::string &help_long, const std::string &help_short, run_callback run = run_callback());
         c_command(const c_command &cmd) = delete;
@@ -48,60 +44,20 @@ namespace ccmd {
         std::vector<std::string> &args();
         const std::vector<std::string> &args() const;
         void execute(int argc, char *argv[]);
-        void execute(std::vector<std::string> &arguments);
         void execute(const std::vector<std::string> &arguments);
         void add_subcommand(std::shared_ptr<c_command> cmd);
         void print_help();
         void print_sub_command();
         void print_flag_set();
 
-        // bool flag
-        bool bool_var(const char *name);
-        bool bool_var(std::string &name);
-        bool bool_var(const std::string &name);
-        bool bool_var(const std::string &name) const;
-        void bool_var(const char *name, bool default_value, const char *usage);
-        void bool_varp(const char *name, const char *short_name, bool default_value, const char *usage);
-        void bool_var(std::string &name, bool default_value, std::string &usage);
-        void bool_varp(std::string &name, std::string &short_name, bool default_value, std::string &usage);
-        void bool_var(const std::string &name, bool default_value, const std::string &usage);
-        void bool_varp(const std::string &name, const std::string &short_name, bool default_value,
-            const std::string &usage);
-        // int flag
-        int int_var(const char *name);
-        int int_var(std::string &name);
-        int int_var(const std::string &name);
-        int int_var(const std::string &name) const;
-        void int_var(const char *name, int default_value, const char *usage);
-        void int_varp(const char *name, const char *short_name, int default_value, const char *usage);
-        void int_var(std::string &name, int default_value, std::string &usage);
-        void int_varp(std::string &name, std::string &short_name, int default_value, std::string &usage);
-        void int_var(const std::string &name, int default_value, const std::string &usage);
-        void int_varp(const std::string &name, const std::string &short_name, int default_value,
-            const std::string &usage);
-        // float flag
-        float float_var(const char *name);
-        float float_var(std::string &name);
-        float float_var(const std::string &name);
-        float float_var(const std::string &name) const;
-        void float_var(const char *name, float default_value, const char *usage);
-        void float_varp(const char *name, const char *short_name, float default_value, const char *usage);
-        void float_var(std::string &name, float default_value, std::string &usage);
-        void float_varp(std::string &name, std::string &short_name, float default_value, std::string &usage);
-        void float_var(const std::string &name, float default_value, const std::string &usage);
-        void float_varp(const std::string &name, const std::string &short_name, float default_value,
-            const std::string &usage);
-        // string flag
-        std::string &string_var(const char *name);
-        std::string &string_var(std::string &name);
-        std::string &string_var(const std::string &name);
-        const std::string &string_var(const std::string &name) const;
-        void string_var(const char *name, const char *default_value, const char *usage);
-        void string_varp(const char *name, const char *short_name, const char *default_value, const char *usage);
-        void string_var(std::string &name, std::string &default_value, std::string &usage);
-        void string_varp(std::string &name, std::string &short_name, std::string &default_value, std::string &usage);
-        void string_var(const std::string &name, const std::string &default_value, const std::string &usage);
-        void string_varp(const std::string &name, const std::string &short_name, const std::string &default_value,
+        template<typename T>
+        T var(const std::string &name) const;
+
+        template<typename T>
+        void var(const std::string &name, T default_value, const std::string &usage);
+
+        template<typename T>
+        void varp(const std::string &name, const std::string &short_name, T default_value,
             const std::string &usage);
 
     private:
@@ -110,13 +66,9 @@ namespace ccmd {
 
     public:
         // setter
-        void usage(std::string &usage) { usage_ = usage; }
         void usage(const std::string &usage) { usage_ = usage; }
-        void example(std::string &example) { example_ = example; }
         void example(const std::string &example) { example_ = example; }
-        void help_short(std::string &help_short) { help_short_ = help_short; }
         void help_short(const std::string &help_short) { help_short_ = help_short; }
-        void help_long(std::string &help_long) { help_long_ = help_long; }
         void help_long(const std::string &help_long) { help_long_ = help_long; }
 
         // getter
@@ -145,20 +97,10 @@ namespace ccmd {
         run_callback run_;
 
         std::map<std::string, std::shared_ptr<c_command>> sub_commands_;
-        std::map<std::string, std::shared_ptr<bool>> bool_vars_;
-        std::map<std::string, std::shared_ptr<bool>> bool_short_vars_;
-        std::map<std::string, std::shared_ptr<int>> int_vars_;
-        std::map<std::string, std::shared_ptr<int>> int_short_vars_;
-        std::map<std::string, std::shared_ptr<float>> float_vars_;
-        std::map<std::string, std::shared_ptr<float>> float_short_vars_;
-        std::map<std::string, std::shared_ptr<std::string>> string_vars_;
-        std::map<std::string, std::shared_ptr<std::string>> string_short_vars_;
+        std::map<std::string, std::shared_ptr<detail::flag_value_base>> flag_values_;
     };
 
 }
 
 #include "ccmd/detail/command.h"
-#include "ccmd/detail/bool.h"
-#include "ccmd/detail/float.h"
-#include "ccmd/detail/int.h"
-#include "ccmd/detail/string.h"
+#include "ccmd/detail/flag.h"

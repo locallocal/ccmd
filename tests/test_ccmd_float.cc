@@ -23,22 +23,22 @@ TEST(test_float, test_float_flag) {
         /* usage      */ "test [-p --percentage=percentage] [--point=point].",
         /* help_long  */ "this is a float test command.",
         /* help_short */ "test command.",
-        /* run        */ test_run 
+        /* run        */ test_run
     );
-    root_cmd->float_varp("percentage", "p", 0.0, "set percentage.");
-    root_cmd->float_var("point", 0.0, "set point.");
+    root_cmd->varp("percentage", "p", 0.0F, "set percentage.");
+    root_cmd->var("point", 0.0F, "set point.");
     std::vector<std::string> arguments = {"test", "--percentage=0.8", "--point=0.8"};
     root_cmd->execute(arguments);
-    EXPECT_FLOAT_EQ(0.8, root_cmd->float_var("percentage"));
-    EXPECT_FLOAT_EQ(0.8, root_cmd->float_var("point"));
+    EXPECT_FLOAT_EQ(0.8, root_cmd->var<float>("percentage"));
+    EXPECT_FLOAT_EQ(0.8, root_cmd->var<float>("point"));
 
     arguments = {"test", "-p", "0.7"};
     root_cmd->execute(arguments);
-    EXPECT_FLOAT_EQ(0.7, root_cmd->float_var("p"));
+    EXPECT_FLOAT_EQ(0.7, root_cmd->var<float>("p"));
 
     arguments = {"test", "-p0.5"};
     root_cmd->execute(arguments);
-    EXPECT_FLOAT_EQ(0.5, root_cmd->float_var("p"));
+    EXPECT_FLOAT_EQ(0.5, root_cmd->var<float>("p"));
 }
 
 TEST(test_float, test_float_already_exist_flag) {
@@ -48,11 +48,13 @@ TEST(test_float, test_float_already_exist_flag) {
         /* usage      */ "test [-p --percentage=percentage].",
         /* help_long  */ "this is a float test command.",
         /* help_short */ "test command.",
-        /* run        */ test_run 
+        /* run        */ test_run
     );
-    root_cmd->float_varp("percentage", "p", 0.0, "set percentage.");
-    EXPECT_EXIT(root_cmd->float_varp("percentage", "", 0.1, ""), testing::ExitedWithCode(EXIT_FAILURE), ".*exist.*");
-    EXPECT_EXIT(root_cmd->float_varp("", "p", 0.2, ""), testing::ExitedWithCode(EXIT_FAILURE), ".*exist.*");
+    root_cmd->varp<float>("percentage", "p", 0.0F, "set percentage.");
+    EXPECT_EXIT(root_cmd->varp<float>("percentage", "", 0.1F, ""),
+        testing::ExitedWithCode(EXIT_FAILURE), ".*exist.*");
+    EXPECT_EXIT(root_cmd->varp<float>("", "p", 0.2F, ""),
+        testing::ExitedWithCode(EXIT_FAILURE), ".*exist.*");
 }
 
 TEST(test_float, test_float_not_found_flag) {
@@ -62,10 +64,10 @@ TEST(test_float, test_float_not_found_flag) {
         /* usage      */ "test [-p --percentage=percentage].",
         /* help_long  */ "this is a float test command.",
         /* help_short */ "test command.",
-        /* run        */ test_run 
+        /* run        */ test_run
     );
-    root_cmd->float_varp("percentage", "p", 0.0, "set percentage.");
+    root_cmd->varp<float>("percentage", "p", 0.0F, "set percentage.");
     std::vector<std::string> arguments = {"test", "--percentage=0.8"};
     root_cmd->execute(arguments);
-    EXPECT_EXIT(root_cmd->float_var("hello"), testing::ExitedWithCode(EXIT_FAILURE), ".*found.*");
+    EXPECT_EXIT(root_cmd->var<float>("hello"), testing::ExitedWithCode(EXIT_FAILURE), ".*found.*");
 }
