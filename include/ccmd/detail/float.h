@@ -12,24 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ccmd.h"
+#pragma once
 
-#include <sstream>
-
-float ccmd::c_command::float_var(const char *name) {
+inline float ccmd::c_command::float_var(const char *name) {
     const std::string var_name = name;
     return float_var(var_name);
 }
 
-float ccmd::c_command::float_var(std::string &name) {
+inline float ccmd::c_command::float_var(std::string &name) {
     return float_var(static_cast<const std::string &>(name));
 }
 
-float ccmd::c_command::float_var(const std::string &name) {
+inline float ccmd::c_command::float_var(const std::string &name) {
     return static_cast<const c_command &>(*this).float_var(name);
 }
 
-float ccmd::c_command::float_var(const std::string &name) const {
+inline float ccmd::c_command::float_var(const std::string &name) const {
     auto it = float_vars_.find(name);
     if (it != float_vars_.end()) {
         return *(it->second);
@@ -43,24 +41,26 @@ float ccmd::c_command::float_var(const std::string &name) const {
     exit(EXIT_FAILURE);
 }
 
-void ccmd::c_command::float_var(const char *name, float default_value, const char *usage) {
+inline void ccmd::c_command::float_var(const char *name, float default_value, const char *usage) {
     std::string var_name = name;
     std::string var_usage = usage;
     float_var(var_name, default_value, var_usage);
 }
 
-void ccmd::c_command::float_varp(const char *name, const char *short_name, float default_value, const char *usage) {
+inline void ccmd::c_command::float_varp(
+        const char *name, const char *short_name, float default_value, const char *usage) {
     std::string var_name = name;
     std::string var_short_name = short_name;
     std::string var_usage = usage;
     float_varp(var_name, var_short_name, default_value, var_usage);
 }
 
-void ccmd::c_command::float_var(std::string &name, float default_value, std::string &usage) {
+inline void ccmd::c_command::float_var(std::string &name, float default_value, std::string &usage) {
     float_var(static_cast<const std::string &>(name), default_value, static_cast<const std::string &>(usage));
 }
 
-void ccmd::c_command::float_var(const std::string &name, float default_value, const std::string &usage) {
+inline void ccmd::c_command::float_var(
+        const std::string &name, float default_value, const std::string &usage) {
     auto it = float_vars_.find(name);
     if (it != float_vars_.end()) {
         std::cerr << this->name() << " flag " << name << " already exist." << std::endl;
@@ -72,17 +72,15 @@ void ccmd::c_command::float_var(const std::string &name, float default_value, co
     std::string mutable_name = name;
     std::string mutable_usage = usage;
     flag_set_->float_var(var.get(), mutable_name, default_value, mutable_usage);
-    std::ostringstream default_stream;
-    default_stream << default_value;
-    remember_flag_(name, "", "float", default_stream.str(), usage);
 }
 
-void ccmd::c_command::float_varp(std::string &name, std::string &short_name, float default_value, std::string &usage) {
+inline void ccmd::c_command::float_varp(
+        std::string &name, std::string &short_name, float default_value, std::string &usage) {
     float_varp(static_cast<const std::string &>(name), static_cast<const std::string &>(short_name), default_value,
         static_cast<const std::string &>(usage));
 }
 
-void ccmd::c_command::float_varp(const std::string &name, const std::string &short_name, float default_value,
+inline void ccmd::c_command::float_varp(const std::string &name, const std::string &short_name, float default_value,
         const std::string &usage) {
     std::shared_ptr<float> var = std::make_shared<float>();
     if (name.size()) {
@@ -106,7 +104,4 @@ void ccmd::c_command::float_varp(const std::string &name, const std::string &sho
     std::string mutable_short_name = short_name;
     std::string mutable_usage = usage;
     flag_set_->float_varp(var.get(), mutable_name, mutable_short_name, default_value, mutable_usage);
-    std::ostringstream default_stream;
-    default_stream << default_value;
-    remember_flag_(name, short_name, "float", default_stream.str(), usage);
 }

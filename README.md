@@ -1,8 +1,8 @@
 # ccmd
 
-`ccmd` is a small command-line parser for C++11 and later. It supports nested
-commands, long and short options, positional arguments, generated help, and
-`bool`, `int`, `float`, and `string` values.
+`ccmd` is a header-only command-line parser for C++11 and later. It supports
+nested commands, long and short options, positional arguments, and generated
+help. Option parsing and value conversion are delegated to `cflag`.
 
 ## Quick start
 
@@ -107,7 +107,7 @@ Available CMake options:
 
 ## Use from another CMake project
 
-Install the library:
+Install the headers and the `cflag` dependency:
 
 ```bash
 cmake -S . -B build -DCCMD_BUILD_EXAMPLES=OFF
@@ -121,6 +121,9 @@ Then consume the exported target:
 find_package(ccmd CONFIG REQUIRED)
 target_link_libraries(my_app PRIVATE ccmd::ccmd)
 ```
+
+`ccmd::ccmd` is an interface target, so no `ccmd` archive is built. It
+propagates the include path and the required `cflag` link dependency.
 
 The project can also be included with `add_subdirectory`; examples are disabled
 automatically when `ccmd` is not the top-level project.

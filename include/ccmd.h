@@ -24,9 +24,9 @@
 
 namespace ccmd {
 
-    extern const std::string k_help_command_name;
-    extern const std::string k_help_flag_long_name;
-    extern const std::string k_help_flag_short_name;
+    static const std::string k_help_command_name = "help";
+    static const std::string k_help_flag_long_name = "--help";
+    static const std::string k_help_flag_short_name = "-h";
 
     class c_command : public std::enable_shared_from_this<c_command> {
     public:
@@ -107,8 +107,6 @@ namespace ccmd {
     private:
         void parse_(std::vector<std::string> &arguments);
         void check_help_(std::vector<std::string> &arguments);
-        void remember_flag_(const std::string &name, const std::string &short_name, const std::string &type,
-            const std::string &default_value, const std::string &usage, bool quote_default = false);
 
     public:
         // setter
@@ -138,15 +136,6 @@ namespace ccmd {
         const std::map<std::string, std::shared_ptr<c_command>> &sub_commands() const { return sub_commands_; }
 
     private:
-        struct flag_description {
-            std::string name;
-            std::string short_name;
-            std::string type;
-            std::string default_value;
-            std::string usage;
-            bool quote_default;
-        };
-
         std::string name_;
         std::string usage_;
         std::string example_;
@@ -156,7 +145,6 @@ namespace ccmd {
         run_callback run_;
 
         std::map<std::string, std::shared_ptr<c_command>> sub_commands_;
-        std::vector<flag_description> flag_descriptions_;
         std::map<std::string, std::shared_ptr<bool>> bool_vars_;
         std::map<std::string, std::shared_ptr<bool>> bool_short_vars_;
         std::map<std::string, std::shared_ptr<int>> int_vars_;
@@ -168,3 +156,9 @@ namespace ccmd {
     };
 
 }
+
+#include "ccmd/detail/command.h"
+#include "ccmd/detail/bool.h"
+#include "ccmd/detail/float.h"
+#include "ccmd/detail/int.h"
+#include "ccmd/detail/string.h"

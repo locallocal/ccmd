@@ -12,22 +12,22 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ccmd.h"
+#pragma once
 
-bool ccmd::c_command::bool_var(const char *name) {
+inline bool ccmd::c_command::bool_var(const char *name) {
     const std::string flag_name = name;
     return bool_var(flag_name);
 }
 
-bool ccmd::c_command::bool_var(std::string &name) {
+inline bool ccmd::c_command::bool_var(std::string &name) {
     return bool_var(static_cast<const std::string &>(name));
 }
 
-bool ccmd::c_command::bool_var(const std::string &name) {
+inline bool ccmd::c_command::bool_var(const std::string &name) {
     return static_cast<const c_command &>(*this).bool_var(name);
 }
 
-bool ccmd::c_command::bool_var(const std::string &name) const {
+inline bool ccmd::c_command::bool_var(const std::string &name) const {
     auto it = bool_vars_.find(name);
     if (it != bool_vars_.end()) {
         return *(it->second);
@@ -36,18 +36,18 @@ bool ccmd::c_command::bool_var(const std::string &name) const {
     if (it != bool_short_vars_.end()) {
         return *(it->second);
     }
-    
+
     std::cerr << this->name() << " flag " << name << " not found." << std::endl;
     exit(EXIT_FAILURE);
 }
 
-void ccmd::c_command::bool_var(const char *name, bool default_value, const char *usage) {
+inline void ccmd::c_command::bool_var(const char *name, bool default_value, const char *usage) {
     std::string var_name = name;
     std::string var_usage = usage;
     bool_var(var_name, default_value, var_usage);
 }
 
-void ccmd::c_command::bool_varp(const char *name, const char *short_name, bool default_value,
+inline void ccmd::c_command::bool_varp(const char *name, const char *short_name, bool default_value,
         const char *usage) {
     std::string var_name = name;
     std::string var_short_name = short_name;
@@ -55,34 +55,33 @@ void ccmd::c_command::bool_varp(const char *name, const char *short_name, bool d
     bool_varp(var_name, var_short_name, default_value, var_usage);
 }
 
-void ccmd::c_command::bool_var(std::string &name, bool default_value, std::string &usage) {
+inline void ccmd::c_command::bool_var(std::string &name, bool default_value, std::string &usage) {
     bool_var(static_cast<const std::string &>(name), default_value, static_cast<const std::string &>(usage));
 }
 
-void ccmd::c_command::bool_var(const std::string &name, bool default_value, const std::string &usage) {
+inline void ccmd::c_command::bool_var(const std::string &name, bool default_value, const std::string &usage) {
     auto it = bool_vars_.find(name);
     if (it != bool_vars_.end()) {
         std::cerr << this->name() << " flag " << name << " already exist." << std::endl;
         exit(EXIT_FAILURE);
     }
 
-    std::shared_ptr<bool> var= std::make_shared<bool>();
+    std::shared_ptr<bool> var = std::make_shared<bool>();
     bool_vars_[name] = var;
     std::string mutable_name = name;
     std::string mutable_usage = usage;
     flag_set_->bool_var(var.get(), mutable_name, default_value, mutable_usage);
-    remember_flag_(name, "", "bool", default_value ? "true" : "false", usage);
 }
 
-void ccmd::c_command::bool_varp(std::string &name, std::string &short_name, bool default_value,
+inline void ccmd::c_command::bool_varp(std::string &name, std::string &short_name, bool default_value,
         std::string &usage) {
     bool_varp(static_cast<const std::string &>(name), static_cast<const std::string &>(short_name), default_value,
         static_cast<const std::string &>(usage));
 }
 
-void ccmd::c_command::bool_varp(const std::string &name, const std::string &short_name, bool default_value,
+inline void ccmd::c_command::bool_varp(const std::string &name, const std::string &short_name, bool default_value,
         const std::string &usage) {
-    std::shared_ptr<bool> var= std::make_shared<bool>();
+    std::shared_ptr<bool> var = std::make_shared<bool>();
     if (name.size()) {
         auto it = bool_vars_.find(name);
         if (it != bool_vars_.end()) {
@@ -104,5 +103,4 @@ void ccmd::c_command::bool_varp(const std::string &name, const std::string &shor
     std::string mutable_short_name = short_name;
     std::string mutable_usage = usage;
     flag_set_->bool_varp(var.get(), mutable_name, mutable_short_name, default_value, mutable_usage);
-    remember_flag_(name, short_name, "bool", default_value ? "true" : "false", usage);
 }

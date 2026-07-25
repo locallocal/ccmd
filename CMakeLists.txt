@@ -3,7 +3,7 @@ cmake_minimum_required(VERSION 3.16)
 project(
     ccmd
     VERSION 0.0.1
-    DESCRIPTION "A small command-line parser for C++11 and later"
+    DESCRIPTION "A header-only command-line parser for C++11 and later"
     LANGUAGES CXX
 )
 
@@ -40,37 +40,26 @@ target_include_directories(
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
 
-add_library(
-    ccmd
-    STATIC
-    src/bool.cc
-    src/ccmd.cc
-    src/float.cc
-    src/int.cc
-    src/string.cc
-)
+add_library(ccmd INTERFACE)
 add_library(ccmd::ccmd ALIAS ccmd)
-target_compile_features(ccmd PUBLIC cxx_std_11)
+target_compile_features(ccmd INTERFACE cxx_std_11)
 target_include_directories(
     ccmd
-    PUBLIC
+    INTERFACE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
-target_link_libraries(ccmd PUBLIC ccmd::cflag)
-
-if(CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
-    target_compile_options(ccmd PRIVATE -Wall -Wextra -Wpedantic)
-endif()
+target_link_libraries(ccmd INTERFACE ccmd::cflag)
 
 if(CCMD_ENABLE_COVERAGE)
     if(NOT CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
         message(FATAL_ERROR "CCMD_ENABLE_COVERAGE requires GCC or Clang")
     endif()
-    foreach(target ccmd_cflag ccmd)
-        target_compile_options(${target} PRIVATE --coverage -O0 -g)
-        target_link_options(${target} PUBLIC --coverage)
-    endforeach()
+    target_compile_options(ccmd_cflag PRIVATE --coverage -O0 -g)
+    target_link_options(ccmd_cflag PUBLIC --coverage)
+    target_compile_options(ccmd INTERFACE $<BUILD_INTERFACE:--coverage> $<BUILD_INTERFACE:-O0>
+        $<BUILD_INTERFACE:-g>)
+    target_link_options(ccmd INTERFACE $<BUILD_INTERFACE:--coverage>)
 endif()
 
 if(CCMD_BUILD_EXAMPLES)
@@ -113,6 +102,10 @@ install(
     FILES
         include/ccmd.h
         third/cflag/include/cflag.h
+    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+)
+install(
+    DIRECTORY include/ccmd
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 install(
