@@ -12,7 +12,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
-#include "ccmd.h"
+#pragma once
 
 #include <algorithm>
 #include <cstdlib>
@@ -21,22 +21,18 @@
 #include <stdexcept>
 #include <utility>
 
-const std::string ccmd::k_help_command_name = "help";
-const std::string ccmd::k_help_flag_long_name = "--help";
-const std::string ccmd::k_help_flag_short_name = "-h";
-
-ccmd::c_command::c_command(const char *name, const char *example, const char *usage, const char *help_long,
+inline ccmd::c_command::c_command(const char *name, const char *example, const char *usage, const char *help_long,
         const char *help_short, run_callback run)
         : c_command(std::string(name), std::string(example), std::string(usage), std::string(help_long),
               std::string(help_short), std::move(run)) {}
 
-ccmd::c_command::c_command(std::string &name, std::string &example, std::string &usage, std::string &help_long,
+inline ccmd::c_command::c_command(std::string &name, std::string &example, std::string &usage, std::string &help_long,
         std::string &help_short, run_callback run)
         : c_command(static_cast<const std::string &>(name), static_cast<const std::string &>(example),
               static_cast<const std::string &>(usage), static_cast<const std::string &>(help_long),
               static_cast<const std::string &>(help_short), std::move(run)) {}
 
-ccmd::c_command::c_command(const std::string &name, const std::string &example, const std::string &usage,
+inline ccmd::c_command::c_command(const std::string &name, const std::string &example, const std::string &usage,
         const std::string &help_long, const std::string &help_short, run_callback run)
         : name_(name),
           usage_(usage),
@@ -50,15 +46,15 @@ ccmd::c_command::c_command(const std::string &name, const std::string &example, 
     }
 }
 
-std::vector<std::string> &ccmd::c_command::args() {
+inline std::vector<std::string> &ccmd::c_command::args() {
     return flag_set_->args();
 }
 
-const std::vector<std::string> &ccmd::c_command::args() const {
+inline const std::vector<std::string> &ccmd::c_command::args() const {
     return flag_set_->args();
 }
 
-void ccmd::c_command::execute(int argc, char *argv[]) {
+inline void ccmd::c_command::execute(int argc, char *argv[]) {
     if (argc <= 0 || argv == nullptr) {
         throw std::invalid_argument("execute requires at least a program name");
     }
@@ -74,11 +70,11 @@ void ccmd::c_command::execute(int argc, char *argv[]) {
     execute(arguments);
 }
 
-void ccmd::c_command::execute(std::vector<std::string> &arguments) {
+inline void ccmd::c_command::execute(std::vector<std::string> &arguments) {
     execute(static_cast<const std::vector<std::string> &>(arguments));
 }
 
-void ccmd::c_command::execute(const std::vector<std::string> &arguments) {
+inline void ccmd::c_command::execute(const std::vector<std::string> &arguments) {
     if (arguments.empty()) {
         throw std::invalid_argument("execute requires at least a program name");
     }
@@ -87,7 +83,7 @@ void ccmd::c_command::execute(const std::vector<std::string> &arguments) {
     parse_(mutable_arguments);
 }
 
-void ccmd::c_command::add_subcommand(std::shared_ptr<ccmd::c_command> cmd) {
+inline void ccmd::c_command::add_subcommand(std::shared_ptr<ccmd::c_command> cmd) {
     if (cmd == nullptr) {
         throw std::invalid_argument("subcommand must not be null");
     }
@@ -100,7 +96,7 @@ void ccmd::c_command::add_subcommand(std::shared_ptr<ccmd::c_command> cmd) {
     sub_commands_[cmd->name()] = cmd;
 }
 
-void ccmd::c_command::print_help() {
+inline void ccmd::c_command::print_help() {
     std::cout << name() << " - " << help_short() << std::endl;
     if (!help_long().empty() && help_long() != help_short()) {
         std::cout << std::endl << help_long() << std::endl;
@@ -120,7 +116,7 @@ void ccmd::c_command::print_help() {
     print_flag_set();
 }
 
-void ccmd::c_command::print_sub_command() {
+inline void ccmd::c_command::print_sub_command() {
     std::size_t width = 0;
     for (const auto &entry : sub_commands_) {
         width = std::max(width, entry.second->name().size());
@@ -131,47 +127,12 @@ void ccmd::c_command::print_sub_command() {
     }
 }
 
-void ccmd::c_command::print_flag_set() {
-    std::vector<std::pair<std::string, std::string>> rows;
-    rows.emplace_back("-h, --help", "Show help information.");
-
-    for (const auto &flag : flag_descriptions_) {
-        std::string label = flag.short_name.empty() ? "    " : "-" + flag.short_name + ", ";
-        if (!flag.name.empty()) {
-            label += "--" + flag.name;
-        }
-        if (flag.type == "bool") {
-            label += "[=<bool>]";
-        } else {
-            label += " <" + flag.type + ">";
-        }
-
-        std::string description = flag.usage;
-        if (!description.empty() && description.back() != '.' && description.back() != '!' &&
-                description.back() != '?') {
-            description += '.';
-        }
-        description += " (default: ";
-        if (flag.quote_default) {
-            description += "\"" + flag.default_value + "\"";
-        } else {
-            description += flag.default_value;
-        }
-        description += ")";
-        rows.emplace_back(std::move(label), std::move(description));
-    }
-
-    std::size_t width = 0;
-    for (const auto &row : rows) {
-        width = std::max(width, row.first.size());
-    }
-    for (const auto &row : rows) {
-        std::cout << "  " << std::left << std::setw(static_cast<int>(width + 2)) << row.first << row.second
-                  << std::endl;
-    }
+inline void ccmd::c_command::print_flag_set() {
+    std::cout << "  -h  --help[bool]\tShow help information. (false)" << std::endl;
+    flag_set_->print_flags();
 }
 
-void ccmd::c_command::parse_(std::vector<std::string> &arguments) {
+inline void ccmd::c_command::parse_(std::vector<std::string> &arguments) {
     if (arguments.empty()) {
         throw std::invalid_argument("execute requires at least a program name");
     }
@@ -204,13 +165,13 @@ void ccmd::c_command::parse_(std::vector<std::string> &arguments) {
     it->second->parse_(next_arguments);
 }
 
-void ccmd::c_command::check_help_(std::vector<std::string> &arguments) {
+inline void ccmd::c_command::check_help_(std::vector<std::string> &arguments) {
     if (arguments.size() < 2) {
         return;
     }
 
     std::string cmd_name = arguments.at(1);
-    if (cmd_name == k_help_command_name) {
+    if (cmd_name == "help") {
         if (arguments.size() < 3) {
             print_help();
             exit(EXIT_SUCCESS);
@@ -220,7 +181,7 @@ void ccmd::c_command::check_help_(std::vector<std::string> &arguments) {
         auto it = sub_commands_.find(cmd_name);
         if (it != sub_commands_.end()) {
             if (arguments.size() > 3) {
-                std::vector<std::string> next_arguments{cmd_name, k_help_command_name};
+                std::vector<std::string> next_arguments{cmd_name, "help"};
                 next_arguments.insert(next_arguments.end(), arguments.begin() + 3, arguments.end());
                 it->second->check_help_(next_arguments);
             }
@@ -237,16 +198,10 @@ void ccmd::c_command::check_help_(std::vector<std::string> &arguments) {
             if (arguments.at(i) == "--") {
                 break;
             }
-            if (arguments.at(i) == k_help_flag_long_name ||
-                    arguments.at(i) == k_help_flag_short_name) {
+            if (arguments.at(i) == "--help" || arguments.at(i) == "-h") {
                 print_help();
                 exit(EXIT_SUCCESS);
             }
         }
     }
-}
-
-void ccmd::c_command::remember_flag_(const std::string &name, const std::string &short_name,
-        const std::string &type, const std::string &default_value, const std::string &usage, bool quote_default) {
-    flag_descriptions_.push_back({name, short_name, type, default_value, usage, quote_default});
 }
