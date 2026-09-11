@@ -23,7 +23,7 @@ void master_run(std::shared_ptr<ccmd::c_command> cmd);
 void meta_run(std::shared_ptr<ccmd::c_command> cmd);
 void storage_run(std::shared_ptr<ccmd::c_command> cmd);
 
-int main(int argc, char *argv[]) {
+int main(int argc, char* argv[]) {
     std::shared_ptr<ccmd::c_command> root_cmd = register_commands();
     root_cmd->execute(argc, argv);
     return 0;
@@ -36,8 +36,7 @@ std::shared_ptr<ccmd::c_command> register_commands() {
         /* usage      */ "example [subcommand] [options].",
         /* help_long  */ "example is a tutorial of ccmd.",
         /* help_short */ "example command.",
-        /* run        */ root_run
-    );
+        /* run        */ root_run);
     root_cmd->varp<bool>("version", "v", false, "show version.");
     root_cmd->var<bool>("verbose", false, "show verbose.");
 
@@ -47,9 +46,7 @@ std::shared_ptr<ccmd::c_command> register_commands() {
     return root_cmd;
 }
 
-void root_run(std::shared_ptr<ccmd::c_command> cmd) {
-    std::cout << "This is the ccmd example." << std::endl;
-}
+void root_run(std::shared_ptr<ccmd::c_command> cmd) { std::cout << "This is the ccmd example." << std::endl; }
 
 void add_master_command(std::shared_ptr<ccmd::c_command> cmd) {
     std::shared_ptr<ccmd::c_command> master_cmd = std::make_shared<ccmd::c_command>(
@@ -58,8 +55,7 @@ void add_master_command(std::shared_ptr<ccmd::c_command> cmd) {
         /* usage      */ "master [--conf=./master.conf] [--port=port] [-d/--daemon].",
         /* help_long  */ "start a master server.",
         /* help_short */ "start a master server.",
-        /* run        */ master_run
-    );
+        /* run        */ master_run);
     master_cmd->varp<bool>("daemon", "d", false, "run daemon.");
     master_cmd->varp<int>("port", "p", 9999, "set server port.");
     master_cmd->varp<std::string>("conf", "c", "", "configuration file.");
@@ -73,8 +69,7 @@ void add_meta_command(std::shared_ptr<ccmd::c_command> cmd) {
         /* usage      */ "meta [--master=127.0.0.1:9999] [--conf=./meta.conf] [--port=port] [-d/--daemon].",
         /* help_long  */ "start a meta server.",
         /* help_short */ "start a meta server.",
-        /* run        */ meta_run
-    );
+        /* run        */ meta_run);
     meta_cmd->varp<bool>("daemon", "d", false, "run daemon.");
     meta_cmd->varp<int>("port", "p", 9998, "set server port.");
     meta_cmd->varp<std::string>("master", "m", "0.0.0.0", "master address.");
@@ -89,8 +84,7 @@ void add_storage_command(std::shared_ptr<ccmd::c_command> cmd) {
         /* usage      */ "storage [--master=127.0.0.1:9999] [--conf=./storage.conf] [--port=port] [-d/--daemon].",
         /* help_long  */ "start a storage server.",
         /* help_short */ "start a storage server.",
-        /* run        */ storage_run
-    );
+        /* run        */ storage_run);
     storage_cmd->varp<bool>("daemon", "d", false, "run daemon.");
     storage_cmd->varp<int>("port", "p", 9997, "set server port.");
     storage_cmd->varp<std::string>("master", "m", "0.0.0.0", "master address.");
@@ -99,7 +93,7 @@ void add_storage_command(std::shared_ptr<ccmd::c_command> cmd) {
 }
 
 void master_run(std::shared_ptr<ccmd::c_command> cmd) {
-    for (auto &arg : cmd->args()) {
+    for (auto& arg : cmd->args()) {
         std::cout << arg << " ";
     }
     std::cout << std::endl;
@@ -109,7 +103,7 @@ void master_run(std::shared_ptr<ccmd::c_command> cmd) {
 }
 
 void meta_run(std::shared_ptr<ccmd::c_command> cmd) {
-    for (auto &arg : cmd->args()) {
+    for (auto& arg : cmd->args()) {
         std::cout << arg << " ";
     }
     std::cout << std::endl;
@@ -120,7 +114,7 @@ void meta_run(std::shared_ptr<ccmd::c_command> cmd) {
 }
 
 void storage_run(std::shared_ptr<ccmd::c_command> cmd) {
-    for (auto &arg : cmd->args()) {
+    for (auto& arg : cmd->args()) {
         std::cout << arg << " ";
     }
     std::cout << std::endl;

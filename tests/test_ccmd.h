@@ -14,7 +14,8 @@
 
 #pragma once
 
-#include "ccmd.h"
 #include <gtest/gtest.h>
+
+#include "ccmd.h"
 
 void test_run(std::shared_ptr<ccmd::c_command> cmd);
