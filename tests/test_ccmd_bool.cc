@@ -12,9 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <gtest/gtest.h>
+
 #include "ccmd.h"
 #include "test_ccmd.h"
-#include <gtest/gtest.h>
 
 TEST(test_bool, test_bool_flag) {
     std::shared_ptr<ccmd::c_command> root_cmd = std::make_shared<ccmd::c_command>(
@@ -23,8 +24,7 @@ TEST(test_bool, test_bool_flag) {
         /* usage      */ "test [-v --version=false].",
         /* help_long  */ "this is a bool flag test command.",
         /* help_short */ "test command.",
-        /* run        */ test_run
-    );
+        /* run        */ test_run);
     root_cmd->varp("version", "v", false, "show test command version.");
     root_cmd->var("verbose", false, "show verbose.");
     std::vector<std::string> arguments = {"test", "--version=true", "--verbose=true"};
@@ -51,13 +51,10 @@ TEST(test_bool, test_bool_already_exist_flag) {
         /* usage      */ "test [-v --version=false].",
         /* help_long  */ "this is a bool flag test command.",
         /* help_short */ "test command.",
-        /* run        */ test_run
-    );
+        /* run        */ test_run);
     root_cmd->varp<bool>("version", "v", false, "show test command version.");
-    EXPECT_EXIT(root_cmd->varp<bool>("version", "", false, ""),
-        testing::ExitedWithCode(EXIT_FAILURE), ".*exist.*");
-    EXPECT_EXIT(root_cmd->varp<bool>("", "v", false, ""),
-        testing::ExitedWithCode(EXIT_FAILURE), ".*exist.*");
+    EXPECT_EXIT(root_cmd->varp<bool>("version", "", false, ""), testing::ExitedWithCode(EXIT_FAILURE), ".*exist.*");
+    EXPECT_EXIT(root_cmd->varp<bool>("", "v", false, ""), testing::ExitedWithCode(EXIT_FAILURE), ".*exist.*");
 }
 
 TEST(test_bool, test_bool_not_found_flag) {
@@ -67,8 +64,7 @@ TEST(test_bool, test_bool_not_found_flag) {
         /* usage      */ "test [-v --version=false].",
         /* help_long  */ "this is a bool flag test command.",
         /* help_short */ "test command.",
-        /* run        */ test_run
-    );
+        /* run        */ test_run);
     root_cmd->varp<bool>("version", "v", false, "show test command version.");
     std::vector<std::string> arguments = {"test", "--version=true"};
     root_cmd->execute(arguments);
@@ -76,10 +72,9 @@ TEST(test_bool, test_bool_not_found_flag) {
 }
 
 TEST(test_bool, test_flag_type_mismatch) {
-    auto root_cmd = std::make_shared<ccmd::c_command>(
-        "test", "test [options].", "test [options].", "test command.", "test command.");
+    auto root_cmd = std::make_shared<ccmd::c_command>("test", "test [options].", "test [options].", "test command.",
+                                                      "test command.");
     root_cmd->var<bool>("verbose", false, "show verbose.");
 
-    EXPECT_EXIT(root_cmd->var<int>("verbose"),
-        testing::ExitedWithCode(EXIT_FAILURE), ".*different type.*");
+    EXPECT_EXIT(root_cmd->var<int>("verbose"), testing::ExitedWithCode(EXIT_FAILURE), ".*different type.*");
 }

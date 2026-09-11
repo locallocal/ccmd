@@ -12,9 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <gtest/gtest.h>
+
 #include "ccmd.h"
 #include "test_ccmd.h"
-#include <gtest/gtest.h>
 
 TEST(test_int, test_int_flag) {
     std::shared_ptr<ccmd::c_command> root_cmd = std::make_shared<ccmd::c_command>(
@@ -23,8 +24,7 @@ TEST(test_int, test_int_flag) {
         /* usage      */ "test [-p --port=port] [--id=id].",
         /* help_long  */ "this is a int test command.",
         /* help_short */ "test command.",
-        /* run        */ test_run
-    );
+        /* run        */ test_run);
     root_cmd->varp("port", "p", 9999, "set server port.");
     root_cmd->var("id", 0, "set server id.");
     std::vector<std::string> arguments = {"test", "--port=10000", "--id=2"};
@@ -50,13 +50,10 @@ TEST(test_int, test_int_already_exist_flag) {
         /* usage      */ "test [-p --port=port].",
         /* help_long  */ "this is a int test command.",
         /* help_short */ "test command.",
-        /* run        */ test_run
-    );
+        /* run        */ test_run);
     root_cmd->varp<int>("port", "p", 9999, "set server port.");
-    EXPECT_EXIT(root_cmd->varp<int>("port", "", 0, ""),
-        testing::ExitedWithCode(EXIT_FAILURE), ".*exist.*");
-    EXPECT_EXIT(root_cmd->varp<int>("", "p", 0, ""),
-        testing::ExitedWithCode(EXIT_FAILURE), ".*exist.*");
+    EXPECT_EXIT(root_cmd->varp<int>("port", "", 0, ""), testing::ExitedWithCode(EXIT_FAILURE), ".*exist.*");
+    EXPECT_EXIT(root_cmd->varp<int>("", "p", 0, ""), testing::ExitedWithCode(EXIT_FAILURE), ".*exist.*");
 }
 
 TEST(test_int, test_int_not_found_flag) {
@@ -66,8 +63,7 @@ TEST(test_int, test_int_not_found_flag) {
         /* usage      */ "test [-p --port=port].",
         /* help_long  */ "this is a int test command.",
         /* help_short */ "test command.",
-        /* run        */ test_run
-    );
+        /* run        */ test_run);
     root_cmd->varp<int>("port", "p", 9999, "set server port.");
     std::vector<std::string> arguments = {"test", "--port=10000"};
     root_cmd->execute(arguments);

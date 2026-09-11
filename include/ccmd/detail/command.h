@@ -21,29 +21,25 @@
 #include <stdexcept>
 #include <utility>
 
-inline ccmd::c_command::c_command(const std::string &name, const std::string &example, const std::string &usage,
-        const std::string &help_long, const std::string &help_short, run_callback run)
-        : name_(name),
-          usage_(usage),
-          example_(example),
-          help_short_(help_short),
-          help_long_(help_long),
-          flag_set_(std::make_shared<cflag::c_flag_set>(name_)),
-          run_(std::move(run)) {
+inline ccmd::c_command::c_command(const std::string& name, const std::string& example, const std::string& usage,
+                                  const std::string& help_long, const std::string& help_short, run_callback run)
+    : name_(name),
+      usage_(usage),
+      example_(example),
+      help_short_(help_short),
+      help_long_(help_long),
+      flag_set_(std::make_shared<cflag::c_flag_set>(name_)),
+      run_(std::move(run)) {
     if (name_.empty()) {
         throw std::invalid_argument("command name must not be empty");
     }
 }
 
-inline std::vector<std::string> &ccmd::c_command::args() {
-    return flag_set_->args();
-}
+inline std::vector<std::string>& ccmd::c_command::args() { return flag_set_->args(); }
 
-inline const std::vector<std::string> &ccmd::c_command::args() const {
-    return flag_set_->args();
-}
+inline const std::vector<std::string>& ccmd::c_command::args() const { return flag_set_->args(); }
 
-inline void ccmd::c_command::execute(int argc, char *argv[]) {
+inline void ccmd::c_command::execute(int argc, char* argv[]) {
     if (argc <= 0 || argv == nullptr) {
         throw std::invalid_argument("execute requires at least a program name");
     }
@@ -59,7 +55,7 @@ inline void ccmd::c_command::execute(int argc, char *argv[]) {
     execute(arguments);
 }
 
-inline void ccmd::c_command::execute(const std::vector<std::string> &arguments) {
+inline void ccmd::c_command::execute(const std::vector<std::string>& arguments) {
     if (arguments.empty()) {
         throw std::invalid_argument("execute requires at least a program name");
     }
@@ -103,10 +99,10 @@ inline void ccmd::c_command::print_help() {
 
 inline void ccmd::c_command::print_sub_command() {
     std::size_t width = 0;
-    for (const auto &entry : sub_commands_) {
+    for (const auto& entry : sub_commands_) {
         width = std::max(width, entry.second->name().size());
     }
-    for (const auto &entry : sub_commands_) {
+    for (const auto& entry : sub_commands_) {
         std::cout << "  " << std::left << std::setw(static_cast<int>(width + 2)) << entry.second->name()
                   << entry.second->help_short() << std::endl;
     }
@@ -117,7 +113,7 @@ inline void ccmd::c_command::print_flag_set() {
     flag_set_->print_flags();
 }
 
-inline void ccmd::c_command::parse_(std::vector<std::string> &arguments) {
+inline void ccmd::c_command::parse_(std::vector<std::string>& arguments) {
     if (arguments.empty()) {
         throw std::invalid_argument("execute requires at least a program name");
     }
@@ -139,7 +135,7 @@ inline void ccmd::c_command::parse_(std::vector<std::string> &arguments) {
         return;
     }
 
-    const std::string &cmd_name = arguments.at(1);
+    const std::string& cmd_name = arguments.at(1);
     auto it = sub_commands_.find(cmd_name);
     if (it == sub_commands_.end()) {
         std::cerr << "error: command '" << cmd_name << "' not found for '" << name() << "'." << std::endl;
@@ -150,7 +146,7 @@ inline void ccmd::c_command::parse_(std::vector<std::string> &arguments) {
     it->second->parse_(next_arguments);
 }
 
-inline void ccmd::c_command::check_help_(std::vector<std::string> &arguments) {
+inline void ccmd::c_command::check_help_(std::vector<std::string>& arguments) {
     if (arguments.size() < 2) {
         return;
     }

@@ -12,9 +12,10 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+#include <gtest/gtest.h>
+
 #include "ccmd.h"
 #include "test_ccmd.h"
-#include <gtest/gtest.h>
 
 TEST(test_float, test_float_flag) {
     std::shared_ptr<ccmd::c_command> root_cmd = std::make_shared<ccmd::c_command>(
@@ -23,8 +24,7 @@ TEST(test_float, test_float_flag) {
         /* usage      */ "test [-p --percentage=percentage] [--point=point].",
         /* help_long  */ "this is a float test command.",
         /* help_short */ "test command.",
-        /* run        */ test_run
-    );
+        /* run        */ test_run);
     root_cmd->varp("percentage", "p", 0.0F, "set percentage.");
     root_cmd->var("point", 0.0F, "set point.");
     std::vector<std::string> arguments = {"test", "--percentage=0.8", "--point=0.8"};
@@ -48,13 +48,10 @@ TEST(test_float, test_float_already_exist_flag) {
         /* usage      */ "test [-p --percentage=percentage].",
         /* help_long  */ "this is a float test command.",
         /* help_short */ "test command.",
-        /* run        */ test_run
-    );
+        /* run        */ test_run);
     root_cmd->varp<float>("percentage", "p", 0.0F, "set percentage.");
-    EXPECT_EXIT(root_cmd->varp<float>("percentage", "", 0.1F, ""),
-        testing::ExitedWithCode(EXIT_FAILURE), ".*exist.*");
-    EXPECT_EXIT(root_cmd->varp<float>("", "p", 0.2F, ""),
-        testing::ExitedWithCode(EXIT_FAILURE), ".*exist.*");
+    EXPECT_EXIT(root_cmd->varp<float>("percentage", "", 0.1F, ""), testing::ExitedWithCode(EXIT_FAILURE), ".*exist.*");
+    EXPECT_EXIT(root_cmd->varp<float>("", "p", 0.2F, ""), testing::ExitedWithCode(EXIT_FAILURE), ".*exist.*");
 }
 
 TEST(test_float, test_float_not_found_flag) {
@@ -64,8 +61,7 @@ TEST(test_float, test_float_not_found_flag) {
         /* usage      */ "test [-p --percentage=percentage].",
         /* help_long  */ "this is a float test command.",
         /* help_short */ "test command.",
-        /* run        */ test_run
-    );
+        /* run        */ test_run);
     root_cmd->varp<float>("percentage", "p", 0.0F, "set percentage.");
     std::vector<std::string> arguments = {"test", "--percentage=0.8"};
     root_cmd->execute(arguments);
