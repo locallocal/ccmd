@@ -18,10 +18,12 @@ std::shared_ptr<ccmd::command> register_commands();
 void add_master_command(std::shared_ptr<ccmd::command> cmd);
 void add_meta_command(std::shared_ptr<ccmd::command> cmd);
 void add_storage_command(std::shared_ptr<ccmd::command> cmd);
+void add_replication_command(std::shared_ptr<ccmd::command> cmd);
 void root_run(std::shared_ptr<ccmd::command> cmd);
 void master_run(std::shared_ptr<ccmd::command> cmd);
 void meta_run(std::shared_ptr<ccmd::command> cmd);
 void storage_run(std::shared_ptr<ccmd::command> cmd);
+void replication_run(std::shared_ptr<ccmd::command> cmd);
 
 int main(int argc, char* argv[]) {
     std::shared_ptr<ccmd::command> root_cmd = register_commands();
@@ -39,10 +41,17 @@ std::shared_ptr<ccmd::command> register_commands() {
         /* run        */ root_run);
     root_cmd->varp<bool>("version", "v", false, "show version.");
     root_cmd->var<bool>("verbose", false, "show verbose.");
+    // A long option name with a description longer than one help line: the
+    // help printer wraps it and keeps the continuation lines aligned.
+    root_cmd->var<std::string>(
+        "log-output-directory", "/var/log/example",
+        "directory that receives the rotated log files of every server started from this binary; it is "
+        "created on first use, must be writable by the service user, and is shared by all subcommands.");
 
     add_master_command(root_cmd);
     add_meta_command(root_cmd);
     add_storage_command(root_cmd);
+    add_replication_command(root_cmd);
     return root_cmd;
 }
 
@@ -92,6 +101,41 @@ void add_storage_command(std::shared_ptr<ccmd::command> cmd) {
     cmd->add_subcommand(storage_cmd);
 }
 
+// A subcommand whose name, short description and option descriptions are all
+// longer than usual, so that `example --help` and
+// `example replication-controller --help` show wrapped, aligned output.
+void add_replication_command(std::shared_ptr<ccmd::command> cmd) {
+    std::shared_ptr<ccmd::command> replication_cmd = std::make_shared<ccmd::command>(
+        /* name       */ "replication-controller",
+        /* example    */
+        "example replication-controller --master=127.0.0.1:9999 "
+        "--heartbeat-interval-seconds=5 --max-inflight-replication-requests=64.",
+        /* usage      */
+        "replication-controller [--master=host:port] [--heartbeat-interval-seconds=seconds] "
+        "[--max-inflight-replication-requests=count] [--snapshot-directory=dir] [-d/--daemon].",
+        /* help_long  */
+        "start the replication controller, which keeps every storage replica in sync with the "
+        "master by streaming committed writes, verifying checksums, and rebuilding replicas from "
+        "the latest snapshot when they fall too far behind to catch up incrementally.",
+        /* help_short */
+        "start the replication controller that keeps storage replicas in sync with the master "
+        "and rebuilds them from snapshots when needed.",
+        /* run        */ replication_run);
+    replication_cmd->varp<bool>("daemon", "d", false, "run daemon.");
+    replication_cmd->varp<std::string>("master", "m", "0.0.0.0:9999", "master address.");
+    replication_cmd->var<int>(
+        "heartbeat-interval-seconds", 10,
+        "seconds between two heartbeats sent to every replica; a replica that misses three consecutive "
+        "heartbeats is marked as lagging and is scheduled for a full rebuild from the latest snapshot.");
+    replication_cmd->var<int>(
+        "max-inflight-replication-requests", 32,
+        "upper bound on replication requests that may be in flight at the same time across all replicas; "
+        "raise it on fast networks to increase throughput, lower it to reduce memory pressure on the master.");
+    replication_cmd->var<std::string>("snapshot-directory", "./snapshots",
+                                      "directory that holds the snapshots used to rebuild lagging replicas.");
+    cmd->add_subcommand(replication_cmd);
+}
+
 void master_run(std::shared_ptr<ccmd::command> cmd) {
     for (auto& arg : cmd->args()) {
         std::cout << arg << " ";
@@ -122,4 +166,17 @@ void storage_run(std::shared_ptr<ccmd::command> cmd) {
     std::cout << "port: " << cmd->var<int>("port") << std::endl;
     std::cout << "master: " << cmd->var<std::string>("master") << std::endl;
     std::cout << "conf: " << cmd->var<std::string>("conf") << std::endl;
+}
+
+void replication_run(std::shared_ptr<ccmd::command> cmd) {
+    for (auto& arg : cmd->args()) {
+        std::cout << arg << " ";
+    }
+    std::cout << std::endl;
+    std::cout << "daemon: " << std::boolalpha << cmd->var<bool>("daemon") << std::endl;
+    std::cout << "master: " << cmd->var<std::string>("master") << std::endl;
+    std::cout << "heartbeat-interval-seconds: " << cmd->var<int>("heartbeat-interval-seconds") << std::endl;
+    std::cout << "max-inflight-replication-requests: " << cmd->var<int>("max-inflight-replication-requests")
+              << std::endl;
+    std::cout << "snapshot-directory: " << cmd->var<std::string>("snapshot-directory") << std::endl;
 }

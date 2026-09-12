@@ -3,6 +3,7 @@ add_executable(
     test_ccmd_bool.cc
     test_ccmd_common.cc
     test_ccmd_float.cc
+    test_ccmd_help.cc
     test_ccmd_int.cc
     test_ccmd_string.cc
     test_ccmd_types.cc
