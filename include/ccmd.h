@@ -17,7 +17,6 @@
 #include <algorithm>
 #include <cstdlib>
 #include <functional>
-#include <iomanip>
 #include <iostream>
 #include <map>
 #include <memory>
@@ -46,6 +45,134 @@ public:
 
     T value;
 };
+
+// What print_help() needs to know about a registered flag. cflag owns the
+// parsing side but does not expose its flag table, so ccmd keeps its own copy.
+struct flag_info {
+    std::string name;
+    std::string short_name;
+    std::string type_name;
+    std::string usage;
+    std::string default_value;
+};
+
+// Maximum width of a line printed by command::print_help().
+inline std::size_t help_line_width() { return 100; }
+
+// Indentation of rows under a section header ("Commands:", "Options:", ...).
+inline std::size_t help_indent() { return 2; }
+
+// Blank columns between the label column and the description column.
+inline std::size_t help_column_gap() { return 2; }
+
+// Minimum width kept for descriptions when labels are unusually wide; a row
+// can exceed help_line_width() only in that case.
+inline std::size_t help_min_text_width() { return 20; }
+
+// Splits text into lines no longer than width, breaking on spaces where
+// possible and inside a word only when the word itself is longer than width.
+inline std::vector<std::string> wrap_text(const std::string& text, std::size_t width) {
+    std::vector<std::string> lines;
+    std::string line;
+    std::size_t position = 0;
+
+    while (position < text.size()) {
+        std::size_t word_end = text.find(' ', position);
+        if (word_end == std::string::npos) {
+            word_end = text.size();
+        }
+        std::string word = text.substr(position, word_end - position);
+        position = word_end + 1;
+        if (word.empty()) {
+            continue;
+        }
+
+        while (word.size() > width) {
+            if (!line.empty()) {
+                lines.push_back(line);
+                line.clear();
+            }
+            lines.push_back(word.substr(0, width));
+            word.erase(0, width);
+        }
+
+        if (line.empty()) {
+            line = word;
+        } else if (line.size() + 1 + word.size() <= width) {
+            line += ' ';
+            line += word;
+        } else {
+            lines.push_back(line);
+            line = word;
+        }
+    }
+
+    if (!line.empty() || lines.empty()) {
+        lines.push_back(line);
+    }
+    return lines;
+}
+
+// Prints text wrapped to help_line_width(), every line indented by indent.
+inline void print_paragraph(std::ostream& out, const std::string& text, std::size_t indent) {
+    const std::size_t width =
+        indent + help_min_text_width() <= help_line_width() ? help_line_width() - indent : help_min_text_width();
+    const std::vector<std::string> lines = wrap_text(text, width);
+    for (const std::string& line : lines) {
+        out << std::string(indent, ' ') << line << '\n';
+    }
+}
+
+// Prints one "label  description" row: the description starts at column and
+// wraps so that continuation lines line up with the first one.
+inline void print_row(std::ostream& out, const std::string& label, std::size_t column, const std::string& text) {
+    const std::size_t width =
+        column + help_min_text_width() <= help_line_width() ? help_line_width() - column : help_min_text_width();
+    const std::vector<std::string> lines = wrap_text(text, width);
+    const std::size_t padding = column > label.size() ? column - label.size() : help_column_gap();
+    out << label << std::string(padding, ' ') << lines[0] << '\n';
+    for (std::size_t index = 1; index < lines.size(); ++index) {
+        out << std::string(column, ' ') << lines[index] << '\n';
+    }
+}
+
+// Column label of a flag: "-p  --port[int]" or "    --verbose[bool]".
+inline std::string flag_label(const flag_info& flag) {
+    std::string label(help_indent(), ' ');
+    if (!flag.short_name.empty()) {
+        label += '-';
+        label += flag.short_name;
+        label += "  ";
+    } else {
+        label += "    ";
+    }
+    if (!flag.name.empty()) {
+        label += "--";
+        label += flag.name;
+    }
+    label += '[';
+    label += flag.type_name;
+    label += ']';
+    return label;
+}
+
+inline std::string flag_description(const flag_info& flag) {
+    std::string text = flag.usage;
+    if (!flag.default_value.empty()) {
+        if (!text.empty()) {
+            text += ' ';
+        }
+        text += "(default: ";
+        text += flag.default_value;
+        text += ')';
+    }
+    return text;
+}
+
+// Sort key used to list flags: long name first, short-only flags by short name.
+inline const std::string& flag_sort_key(const flag_info& flag) {
+    return flag.name.empty() ? flag.short_name : flag.name;
+}
 
 }  // namespace detail
 
@@ -118,6 +245,7 @@ private:
 
     std::map<std::string, std::shared_ptr<command>> sub_commands_;
     std::map<std::string, std::shared_ptr<detail::flag_value_base>> flag_values_;
+    std::vector<detail::flag_info> flag_infos_;
 };
 
 // ---------------------------------------------------------------------------
@@ -181,23 +309,27 @@ inline void command::add_subcommand(std::shared_ptr<command> cmd) {
 }
 
 inline void command::print_help() {
-    std::cout << name() << " - " << help_short() << std::endl;
+    detail::print_paragraph(std::cout, name() + " - " + help_short(), 0);
     if (!help_long().empty() && help_long() != help_short()) {
-        std::cout << std::endl << help_long() << std::endl;
+        std::cout << '\n';
+        detail::print_paragraph(std::cout, help_long(), 0);
     }
 
-    std::cout << std::endl << "Usage:" << std::endl << "  " << usage() << std::endl;
+    std::cout << '\n' << "Usage:" << '\n';
+    detail::print_paragraph(std::cout, usage(), detail::help_indent());
     if (!example().empty()) {
-        std::cout << std::endl << "Example:" << std::endl << "  " << example() << std::endl;
+        std::cout << '\n' << "Example:" << '\n';
+        detail::print_paragraph(std::cout, example(), detail::help_indent());
     }
 
     if (!sub_commands_.empty()) {
-        std::cout << std::endl << "Commands:" << std::endl;
+        std::cout << '\n' << "Commands:" << '\n';
         print_sub_command();
     }
 
-    std::cout << std::endl << "Options:" << std::endl;
+    std::cout << '\n' << "Options:" << '\n';
     print_flag_set();
+    std::cout.flush();
 }
 
 inline void command::print_sub_command() {
@@ -205,17 +337,37 @@ inline void command::print_sub_command() {
     for (const auto& entry : sub_commands_) {
         width = std::max(width, entry.second->name().size());
     }
+    const std::size_t column = detail::help_indent() + width + detail::help_column_gap();
     for (const auto& entry : sub_commands_) {
-        std::cout << "  " << std::left << std::setw(static_cast<int>(width + 2)) << entry.second->name()
-                  << entry.second->help_short() << std::endl;
+        const std::string label = std::string(detail::help_indent(), ' ') + entry.second->name();
+        detail::print_row(std::cout, label, column, entry.second->help_short());
     }
 }
 
 inline void command::print_flag_set() {
-    // Mirrors the " -x  --name[type] usage(default)" rows that cflag prints.
-    // help/-h are reserved in cflag and handled by ccmd, so they are listed here.
-    std::cout << " -h  --help[bool] show help information.(false)" << std::endl;
-    flag_set_->print_flags();
+    // help/-h and flag-file are reserved by cflag and never appear in
+    // flag_infos_, so they are listed explicitly together with the user flags.
+    std::vector<detail::flag_info> flags;
+    flags.reserve(flag_infos_.size() + 2);
+    flags.push_back(detail::flag_info{"help", "h", "bool", "show help information.", ""});
+    flags.push_back(detail::flag_info{"flag-file", "", "string", "load flags from a JSON, YAML or gflags file.", ""});
+    flags.insert(flags.end(), flag_infos_.begin(), flag_infos_.end());
+    std::stable_sort(flags.begin(), flags.end(), [](const detail::flag_info& lhs, const detail::flag_info& rhs) {
+        return detail::flag_sort_key(lhs) < detail::flag_sort_key(rhs);
+    });
+
+    std::vector<std::string> labels;
+    labels.reserve(flags.size());
+    std::size_t width = 0;
+    for (const detail::flag_info& flag : flags) {
+        labels.push_back(detail::flag_label(flag));
+        width = std::max(width, labels.back().size());
+    }
+
+    const std::size_t column = width + detail::help_column_gap();
+    for (std::size_t index = 0; index < flags.size(); ++index) {
+        detail::print_row(std::cout, labels[index], column, detail::flag_description(flags[index]));
+    }
 }
 
 inline void command::parse_(std::vector<std::string>& arguments) {
@@ -340,9 +492,12 @@ inline void command::varp(const std::string& name, const std::string& short_name
         }
     }
 
-    // cflag validates the names (reserved, duplicate, short-name length),
-    // formats the default for --help and converts parsed text via flag_traits<T>.
+    // cflag validates the names (reserved, duplicate, short-name length) and
+    // converts parsed text via flag_traits<T>; it exits on failure, so the
+    // metadata below is only recorded for flags it accepted.
     flag_set_->varp<T>(&value->value, name, short_name, default_value, usage);
+    flag_infos_.push_back(detail::flag_info{name, short_name, cflag::flag_traits<T>::type_name(), usage,
+                                            cflag::flag_traits<T>::format(default_value)});
 }
 
 }  // namespace ccmd

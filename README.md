@@ -190,7 +190,9 @@ mode execution_mode = command->var<mode>("mode");
 --                stop parsing options
 ```
 
-Use `-h`, `--help`, or `help [command]` to display generated help.
+Use `-h`, `--help`, or `help [command]` to display generated help. The help
+output lists subcommands and options (including the built-in `--help` and
+`--flag-file`) in aligned columns and wraps every line at 100 characters.
 
 ### Flag files
 

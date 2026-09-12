@@ -184,7 +184,9 @@ mode execution_mode = command->var<mode>("mode");
 --                停止解析选项
 ```
 
-使用 `-h`、`--help` 或 `help [command]` 显示自动生成的帮助信息。
+使用 `-h`、`--help` 或 `help [command]` 显示自动生成的帮助信息。帮助信息中的
+子命令和选项（包括内置的 `--help` 和 `--flag-file`）按列对齐，每行最长不超过
+100 个字符。
 
 ### 选项文件
 
