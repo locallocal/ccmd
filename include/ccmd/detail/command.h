@@ -28,7 +28,7 @@ inline ccmd::c_command::c_command(const std::string& name, const std::string& ex
       example_(example),
       help_short_(help_short),
       help_long_(help_long),
-      flag_set_(std::make_shared<cflag::c_flag_set>(name_)),
+      flag_set_(std::make_shared<cflag::flag_set>()),
       run_(std::move(run)) {
     if (name_.empty()) {
         throw std::invalid_argument("command name must not be empty");
@@ -109,7 +109,9 @@ inline void ccmd::c_command::print_sub_command() {
 }
 
 inline void ccmd::c_command::print_flag_set() {
-    std::cout << "  -h  --help[bool]\tShow help information. (false)" << std::endl;
+    // Mirrors the " -x  --name[type] usage(default)" rows that cflag prints.
+    // help/-h are reserved in cflag and handled by ccmd, so they are listed here.
+    std::cout << " -h  --help[bool] show help information.(false)" << std::endl;
     flag_set_->print_flags();
 }
 

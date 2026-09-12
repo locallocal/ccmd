@@ -5,6 +5,7 @@ add_executable(
     test_ccmd_float.cc
     test_ccmd_int.cc
     test_ccmd_string.cc
+    test_ccmd_types.cc
 )
 target_link_libraries(ccmd-test PRIVATE ccmd::ccmd GTest::gtest_main)
 

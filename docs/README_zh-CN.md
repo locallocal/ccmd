@@ -12,7 +12,9 @@
 - header-only 的 `ccmd` API 和 CMake 接口目标
 - 支持命令和任意层级的嵌套子命令
 - 支持长选项和短选项
-- 通过类型安全模板支持 `bool`、`int`、`float` 和 `std::string`
+- 通过类型安全模板支持 `bool`、所有整数和浮点类型、`std::string`，
+  以及借助 `cflag::flag_traits<T>` 自定义的类型
+- 内置 `--flag-file`，支持从 JSON、YAML 或 gflags 格式的文件加载选项
 - 支持位置参数和 `--` 选项终止符
 - 支持命令回调和自动生成帮助信息
 - 公共 API 兼容 C++11
@@ -21,7 +23,7 @@
 
 - 支持 C++11 的编译器
 - CMake 3.16 或更高版本
-- `cflag` Git 子模块
+- `cflag` Git 子模块（v0.0.2 或更高版本，header-only）
 
 克隆仓库时可以同时初始化依赖：
 
@@ -36,8 +38,9 @@ cd ccmd
 git submodule update --init --recursive
 ```
 
-`ccmd` 本身不会生成库文件。导出的 `ccmd::ccmd` 是一个 CMake 接口目标，
-它会向使用方传递所需的头文件路径，并自动链接编译后的 `cflag` 依赖。
+`ccmd` 和 `cflag` 都是 header-only 的，不需要编译或链接任何库文件。导出的
+`ccmd::ccmd` 是一个 CMake 接口目标，它会向使用方传递自身以及 `cflag`
+的头文件路径。
 
 ## 快速开始
 
@@ -133,11 +136,41 @@ std::string config = command->var<std::string>("config");
 ```
 
 注册模板会根据默认值推导 `T`。默认值为字符串字面量时，需要显式指定
-`std::string`。目前支持 `bool`、`int`、`float` 和 `std::string`，每种类型
-的转换均委托给 `cflag`；注册其他类型会在编译期报错。
+`std::string`。值的转换与校验均委托给 `cflag::flag_traits<T>`，因此 `cflag`
+支持的所有类型都可以使用：`bool`、所有字符、整数和浮点类型（包括
+`<cstdint>` 中的定宽别名）、`std::nullptr_t` 以及 `std::string`。整数会做范围
+检查，不允许部分解析。注册没有 `flag_traits` 特化的类型会在编译期报错。
 
-旧的类型专用接口 `bool_var`、`int_var`、`float_var` 和 `string_var`
-不再提供。
+`help`、`h` 和 `flag-file` 这三个名称由 `cflag` 保留，注册它们会输出诊断信息
+并终止程序。
+
+### 自定义值类型
+
+特化 `cflag::flag_traits<T>` 后即可通过 `var<T>` / `varp<T>` 注册自定义类型：
+
+```cpp
+enum class mode { safe, fast };
+
+namespace cflag {
+template <>
+struct flag_traits<mode> {
+    static const std::string &type_name() {
+        static const std::string name = "mode";
+        return name;
+    }
+    static std::string format(mode value) { return value == mode::safe ? "safe" : "fast"; }
+    static bool parse(const std::string &text, mode &value) {
+        if (text == "safe") { value = mode::safe; return true; }
+        if (text == "fast") { value = mode::fast; return true; }
+        return false; // 解析失败时不要修改 value
+    }
+    static bool has_implicit_value() { return false; }
+};
+} // namespace cflag
+
+command->varp("mode", "m", mode::safe, "execution mode");
+mode execution_mode = command->var<mode>("mode");
+```
 
 ### 支持的选项形式
 
@@ -147,10 +180,37 @@ std::string config = command->var<std::string>("config");
 -p8080            短选项和值紧凑传递
 --verbose         布尔选项，等价于 --verbose=true
 -abc              合并多个布尔短选项
+--flag-file=FILE  从文件加载选项（见下文）
 --                停止解析选项
 ```
 
 使用 `-h`、`--help` 或 `help [command]` 显示自动生成的帮助信息。
+
+### 选项文件
+
+每个命令都接受 `--flag-file=<path>`。文件会在命令行中出现的位置被应用，
+因此后续参数可以覆盖文件中的值；文件内部也可以通过 `flag-file` 继续引用
+其他文件（最多嵌套 16 层）。格式根据扩展名（`.json`、`.yaml`、`.yml`）
+判断，否则根据内容自动识别：
+
+```yaml
+# server.yaml
+port: 8080
+verbose: true
+```
+
+```json
+{"port": 8080, "verbose": true}
+```
+
+```text
+# server.gflags
+--port=8080
+--verbose
+```
+
+只接受扁平的键值对内容；嵌套对象、列表和 `null` 会被拒绝并输出诊断信息。
+如需在代码中加载文件，可调用 `command->flag_set()->parse_file(path)`。
 
 ## 位置参数
 
@@ -178,7 +238,7 @@ target_link_libraries(my_app PRIVATE ccmd::ccmd)
 
 ### 安装后通过 `find_package` 使用
 
-安装头文件、`cflag` 以及 CMake 包配置：
+安装头文件以及 CMake 包配置：
 
 ```bash
 cmake -S . -B build \
@@ -237,8 +297,9 @@ ctest --test-dir build --output-on-failure
 ## 错误处理
 
 调用 `execute` 时没有传入程序名称、添加空的子命令，或者注册选项时长名称和
-短名称均为空，会抛出 `std::invalid_argument`。无效选项、无效值、重复名称、
-读取类型不匹配或未知子命令会输出诊断信息，并以非零状态码退出。`-h`、
+短名称均为空，会抛出 `std::invalid_argument`。无效选项、无效值、重复或保留的
+名称、多字符的短名称、读取类型不匹配、无法读取的选项文件或未知子命令会输出
+诊断信息，并以非零状态码退出。`-h`、
 `--help` 和有效的 `help` 命令在输出帮助信息后会正常退出。
 
 ## 许可证

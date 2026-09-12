@@ -21,24 +21,10 @@ option(CCMD_BUILD_TESTS "Build the ccmd test suite" OFF)
 option(CCMD_FETCH_TEST_DEPS "Download GoogleTest when it is not installed" ON)
 option(CCMD_ENABLE_COVERAGE "Enable GCC/Clang coverage instrumentation" OFF)
 
-add_library(
-    ccmd_cflag
-    STATIC
-    third/cflag/src/bool.cc
-    third/cflag/src/cflag.cc
-    third/cflag/src/float.cc
-    third/cflag/src/int.cc
-    third/cflag/src/string.cc
-)
-add_library(ccmd::cflag ALIAS ccmd_cflag)
-set_target_properties(ccmd_cflag PROPERTIES EXPORT_NAME cflag OUTPUT_NAME cflag)
-target_compile_features(ccmd_cflag PUBLIC cxx_std_11)
-target_include_directories(
-    ccmd_cflag
-    PUBLIC
-        $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/third/cflag/include>
-        $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
-)
+# cflag (>= v0.0.2) is header-only and ships its own CMake project, which
+# defines the cflag::cflag interface target. Its example and tests are
+# disabled automatically because it is not the top-level project here.
+add_subdirectory(third/cflag)
 
 add_library(ccmd INTERFACE)
 add_library(ccmd::ccmd ALIAS ccmd)
@@ -49,14 +35,12 @@ target_include_directories(
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
         $<INSTALL_INTERFACE:${CMAKE_INSTALL_INCLUDEDIR}>
 )
-target_link_libraries(ccmd INTERFACE ccmd::cflag)
+target_link_libraries(ccmd INTERFACE cflag::cflag)
 
 if(CCMD_ENABLE_COVERAGE)
     if(NOT CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
         message(FATAL_ERROR "CCMD_ENABLE_COVERAGE requires GCC or Clang")
     endif()
-    target_compile_options(ccmd_cflag PRIVATE --coverage -O0 -g)
-    target_link_options(ccmd_cflag PUBLIC --coverage)
     target_compile_options(ccmd INTERFACE $<BUILD_INTERFACE:--coverage> $<BUILD_INTERFACE:-O0>
         $<BUILD_INTERFACE:-g>)
     target_link_options(ccmd INTERFACE $<BUILD_INTERFACE:--coverage>)
@@ -90,12 +74,11 @@ if(CCMD_BUILD_TESTS)
     add_subdirectory(tests)
 endif()
 
+# Both targets are header-only, so the export only carries include paths and
+# the C++11 requirement. cflag is exported as ccmd::cflag alongside ccmd::ccmd.
 install(
-    TARGETS ccmd ccmd_cflag
+    TARGETS ccmd cflag
     EXPORT ccmdTargets
-    ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
-    RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
     INCLUDES DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 install(
