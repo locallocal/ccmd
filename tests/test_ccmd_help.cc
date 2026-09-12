@@ -176,3 +176,23 @@ TEST(test_help, custom_type_and_empty_default_are_rendered) {
     EXPECT_TRUE(saw_ratio);
     EXPECT_TRUE(saw_name);
 }
+
+TEST(test_help, default_suffix_is_never_split_across_lines) {
+    auto root_cmd = std::make_shared<ccmd::command>("test", "", "test.", "a help test.", "test command.", test_run);
+    // The usage is sized so that "(default: 10)" does not fit on its last line.
+    root_cmd->var("heartbeat-interval-seconds", 10,
+                  "seconds between two heartbeats sent to every replica; a replica that misses three consecutive "
+                  "heartbeats is marked as lagging and is scheduled for a full rebuild from the latest snapshot.");
+
+    const std::vector<std::string> options = section(help_lines(root_cmd), "Options:");
+    bool saw_suffix = false;
+    for (const std::string& row : options) {
+        EXPECT_EQ(std::string::npos, row.find("(default:\n"));
+        const std::size_t open = row.find("(default:");
+        if (open != std::string::npos) {
+            saw_suffix = true;
+            EXPECT_NE(std::string::npos, row.find("10)", open)) << row;
+        }
+    }
+    EXPECT_TRUE(saw_suffix);
+}

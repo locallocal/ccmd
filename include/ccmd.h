@@ -124,11 +124,26 @@ inline void print_paragraph(std::ostream& out, const std::string& text, std::siz
 }
 
 // Prints one "label  description" row: the description starts at column and
-// wraps so that continuation lines line up with the first one.
-inline void print_row(std::ostream& out, const std::string& label, std::size_t column, const std::string& text) {
+// wraps so that continuation lines line up with the first one. suffix (for
+// example "(default: 10)") is appended to the last line when it fits there and
+// otherwise starts a line of its own, so it is never split in the middle.
+inline void print_row(std::ostream& out, const std::string& label, std::size_t column, const std::string& text,
+                      const std::string& suffix = std::string()) {
     const std::size_t width =
         column + help_min_text_width() <= help_line_width() ? help_line_width() - column : help_min_text_width();
-    const std::vector<std::string> lines = wrap_text(text, width);
+    std::vector<std::string> lines = wrap_text(text, width);
+    if (!suffix.empty()) {
+        if (lines.back().empty()) {
+            lines.pop_back();
+        }
+        if (!lines.empty() && lines.back().size() + 1 + suffix.size() <= width) {
+            lines.back() += ' ';
+            lines.back() += suffix;
+        } else {
+            const std::vector<std::string> suffix_lines = wrap_text(suffix, width);
+            lines.insert(lines.end(), suffix_lines.begin(), suffix_lines.end());
+        }
+    }
     const std::size_t padding = column > label.size() ? column - label.size() : help_column_gap();
     out << label << std::string(padding, ' ') << lines[0] << '\n';
     for (std::size_t index = 1; index < lines.size(); ++index) {
@@ -156,17 +171,12 @@ inline std::string flag_label(const flag_info& flag) {
     return label;
 }
 
-inline std::string flag_description(const flag_info& flag) {
-    std::string text = flag.usage;
-    if (!flag.default_value.empty()) {
-        if (!text.empty()) {
-            text += ' ';
-        }
-        text += "(default: ";
-        text += flag.default_value;
-        text += ')';
+// "(default: value)" shown after the usage, empty when there is no default.
+inline std::string flag_default_suffix(const flag_info& flag) {
+    if (flag.default_value.empty()) {
+        return std::string();
     }
-    return text;
+    return "(default: " + flag.default_value + ")";
 }
 
 // Sort key used to list flags: long name first, short-only flags by short name.
@@ -366,7 +376,8 @@ inline void command::print_flag_set() {
 
     const std::size_t column = width + detail::help_column_gap();
     for (std::size_t index = 0; index < flags.size(); ++index) {
-        detail::print_row(std::cout, labels[index], column, detail::flag_description(flags[index]));
+        detail::print_row(std::cout, labels[index], column, flags[index].usage,
+                          detail::flag_default_suffix(flags[index]));
     }
 }
 
