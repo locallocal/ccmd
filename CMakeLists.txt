@@ -88,10 +88,6 @@ install(
     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
 )
 install(
-    DIRECTORY include/ccmd
-    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
-)
-install(
     EXPORT ccmdTargets
     FILE ccmdTargets.cmake
     NAMESPACE ccmd::
