@@ -81,8 +81,8 @@ public:
     const std::string& help_short() const { return help_short_; }
     std::string& help_long() { return help_long_; }
     const std::string& help_long() const { return help_long_; }
-    std::shared_ptr<cflag::c_flag_set> flag_set() { return flag_set_; }
-    std::shared_ptr<const cflag::c_flag_set> flag_set() const { return flag_set_; }
+    std::shared_ptr<cflag::flag_set> flag_set() { return flag_set_; }
+    std::shared_ptr<const cflag::flag_set> flag_set() const { return flag_set_; }
     std::map<std::string, std::shared_ptr<c_command>>& sub_commands() { return sub_commands_; }
     const std::map<std::string, std::shared_ptr<c_command>>& sub_commands() const { return sub_commands_; }
 
@@ -92,7 +92,7 @@ private:
     std::string example_;
     std::string help_short_;
     std::string help_long_;
-    std::shared_ptr<cflag::c_flag_set> flag_set_;
+    std::shared_ptr<cflag::flag_set> flag_set_;
     run_callback run_;
 
     std::map<std::string, std::shared_ptr<c_command>> sub_commands_;

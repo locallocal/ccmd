@@ -13,7 +13,9 @@ supported value types.
 - Header-only `ccmd` API with a CMake interface target
 - Commands and arbitrarily nested subcommands
 - Long and short options
-- Type-safe template flags for `bool`, `int`, `float`, and `std::string`
+- Type-safe template flags for `bool`, every integer and floating-point type,
+  `std::string`, and custom types through `cflag::flag_traits<T>`
+- Flag files in JSON, YAML, or gflags format via the built-in `--flag-file`
 - Positional arguments and the `--` option terminator
 - Command callbacks and generated help
 - C++11-compatible public API
@@ -22,7 +24,7 @@ supported value types.
 
 - A C++11-compatible compiler
 - CMake 3.16 or newer
-- The `cflag` Git submodule
+- The `cflag` Git submodule (v0.0.2 or newer, header-only)
 
 Clone the repository and initialize the dependency in one step:
 
@@ -37,9 +39,9 @@ For an existing clone, initialize the dependency with:
 git submodule update --init --recursive
 ```
 
-`ccmd` itself does not produce a library archive. The exported `ccmd::ccmd`
-interface target supplies its headers and links the compiled `cflag`
-dependency transitively.
+Both `ccmd` and `cflag` are header-only, so nothing is compiled or linked.
+The exported `ccmd::ccmd` interface target supplies its own headers and the
+`cflag` include path transitively.
 
 ## Quick start
 
@@ -136,12 +138,45 @@ std::string config = command->var<std::string>("config");
 ```
 
 Registration templates infer `T` from the default value. Specify
-`std::string` explicitly when the default is a string literal. The supported
-types are `bool`, `int`, `float`, and `std::string`; conversion for each type is
-delegated to `cflag`. Registering any other type produces a compile-time error.
+`std::string` explicitly when the default is a string literal. Conversion and
+validation are delegated to `cflag::flag_traits<T>`, so every type that
+`cflag` supports is available: `bool`, all character, integer, and
+floating-point types (including the fixed-width `<cstdint>` aliases),
+`std::nullptr_t`, and `std::string`. Integer values are range-checked and
+partial parses are rejected. Registering a type without a `flag_traits`
+specialization produces a compile-time error.
 
-The old type-specific `bool_var`, `int_var`, `float_var`, and `string_var`
-interfaces are not provided.
+The names `help`, `h`, and `flag-file` are reserved by `cflag`; registering
+them terminates with a diagnostic.
+
+### Custom value types
+
+Specialize `cflag::flag_traits<T>` to register your own type with `var<T>` /
+`varp<T>`:
+
+```cpp
+enum class mode { safe, fast };
+
+namespace cflag {
+template <>
+struct flag_traits<mode> {
+    static const std::string &type_name() {
+        static const std::string name = "mode";
+        return name;
+    }
+    static std::string format(mode value) { return value == mode::safe ? "safe" : "fast"; }
+    static bool parse(const std::string &text, mode &value) {
+        if (text == "safe") { value = mode::safe; return true; }
+        if (text == "fast") { value = mode::fast; return true; }
+        return false; // leave value untouched
+    }
+    static bool has_implicit_value() { return false; }
+};
+} // namespace cflag
+
+command->varp("mode", "m", mode::safe, "execution mode");
+mode execution_mode = command->var<mode>("mode");
+```
 
 ### Supported option forms
 
@@ -151,10 +186,39 @@ interfaces are not provided.
 -p8080            short option with a compact value
 --verbose         boolean option (equivalent to --verbose=true)
 -abc              combined short boolean options
+--flag-file=FILE  load options from a file (see below)
 --                stop parsing options
 ```
 
 Use `-h`, `--help`, or `help [command]` to display generated help.
+
+### Flag files
+
+Every command accepts `--flag-file=<path>`. The file is applied at that
+position on the command line, so later arguments override it, and files may
+include other files with `flag-file` (16 levels deep at most). The format is
+chosen by extension (`.json`, `.yaml`, `.yml`) and otherwise sniffed from the
+content:
+
+```yaml
+# server.yaml
+port: 8080
+verbose: true
+```
+
+```json
+{"port": 8080, "verbose": true}
+```
+
+```text
+# server.gflags
+--port=8080
+--verbose
+```
+
+Only flat key/value content is accepted; nested objects, lists, and `null`
+are rejected with a diagnostic. To apply a file programmatically, call
+`command->flag_set()->parse_file(path)`.
 
 ## Positional arguments
 
@@ -182,7 +246,7 @@ Examples are disabled automatically when `ccmd` is not the top-level project.
 
 ### Install and use `find_package`
 
-Install the headers, `cflag`, and the CMake package files:
+Install the headers and the CMake package files:
 
 ```bash
 cmake -S . -B build \
@@ -242,9 +306,9 @@ otherwise downloads the pinned test version.
 
 Calling `execute` without a program name, adding a null subcommand, or
 registering a flag without either a long or short name throws
-`std::invalid_argument`. Invalid options, values, duplicate names, type
-mismatches, or unknown subcommands print a diagnostic and terminate with a
-non-zero exit status.
+`std::invalid_argument`. Invalid options, values, duplicate or reserved names,
+multi-character short names, type mismatches, unreadable flag files, or unknown
+subcommands print a diagnostic and terminate with a non-zero exit status.
 `-h`, `--help`, and valid `help` commands terminate successfully after printing
 help.
 
