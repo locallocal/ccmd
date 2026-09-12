@@ -47,8 +47,16 @@ example: release
 
 format:
 	@command -v $(CLANG_FORMAT) >/dev/null 2>&1 || { echo 'error: $(CLANG_FORMAT) not found' >&2; exit 1; }
-	$(CLANG_FORMAT) -i --style=file $(FORMAT_FILES)
+	@for f in $(FORMAT_FILES); do \
+		echo "$(CLANG_FORMAT) -i --style=file $$f"; \
+		$(CLANG_FORMAT) -i --style=file "$$f" || exit 1; \
+	done
 
 format-check:
 	@command -v $(CLANG_FORMAT) >/dev/null 2>&1 || { echo 'error: $(CLANG_FORMAT) not found' >&2; exit 1; }
-	$(CLANG_FORMAT) --dry-run --Werror --style=file $(FORMAT_FILES)
+	@status=0; \
+	for f in $(FORMAT_FILES); do \
+		echo "$(CLANG_FORMAT) --dry-run --Werror --style=file $$f"; \
+		$(CLANG_FORMAT) --dry-run --Werror --style=file "$$f" || status=1; \
+	done; \
+	exit $$status
