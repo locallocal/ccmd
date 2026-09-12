@@ -14,23 +14,23 @@
 
 #include "ccmd.h"
 
-std::shared_ptr<ccmd::c_command> register_commands();
-void add_master_command(std::shared_ptr<ccmd::c_command> cmd);
-void add_meta_command(std::shared_ptr<ccmd::c_command> cmd);
-void add_storage_command(std::shared_ptr<ccmd::c_command> cmd);
-void root_run(std::shared_ptr<ccmd::c_command> cmd);
-void master_run(std::shared_ptr<ccmd::c_command> cmd);
-void meta_run(std::shared_ptr<ccmd::c_command> cmd);
-void storage_run(std::shared_ptr<ccmd::c_command> cmd);
+std::shared_ptr<ccmd::command> register_commands();
+void add_master_command(std::shared_ptr<ccmd::command> cmd);
+void add_meta_command(std::shared_ptr<ccmd::command> cmd);
+void add_storage_command(std::shared_ptr<ccmd::command> cmd);
+void root_run(std::shared_ptr<ccmd::command> cmd);
+void master_run(std::shared_ptr<ccmd::command> cmd);
+void meta_run(std::shared_ptr<ccmd::command> cmd);
+void storage_run(std::shared_ptr<ccmd::command> cmd);
 
 int main(int argc, char* argv[]) {
-    std::shared_ptr<ccmd::c_command> root_cmd = register_commands();
+    std::shared_ptr<ccmd::command> root_cmd = register_commands();
     root_cmd->execute(argc, argv);
     return 0;
 }
 
-std::shared_ptr<ccmd::c_command> register_commands() {
-    std::shared_ptr<ccmd::c_command> root_cmd = std::make_shared<ccmd::c_command>(
+std::shared_ptr<ccmd::command> register_commands() {
+    std::shared_ptr<ccmd::command> root_cmd = std::make_shared<ccmd::command>(
         /* name       */ "example",
         /* example    */ "example meta [options].",
         /* usage      */ "example [subcommand] [options].",
@@ -46,10 +46,10 @@ std::shared_ptr<ccmd::c_command> register_commands() {
     return root_cmd;
 }
 
-void root_run(std::shared_ptr<ccmd::c_command> cmd) { std::cout << "This is the ccmd example." << std::endl; }
+void root_run(std::shared_ptr<ccmd::command> cmd) { std::cout << "This is the ccmd example." << std::endl; }
 
-void add_master_command(std::shared_ptr<ccmd::c_command> cmd) {
-    std::shared_ptr<ccmd::c_command> master_cmd = std::make_shared<ccmd::c_command>(
+void add_master_command(std::shared_ptr<ccmd::command> cmd) {
+    std::shared_ptr<ccmd::command> master_cmd = std::make_shared<ccmd::command>(
         /* name       */ "master",
         /* example    */ "example master --conf=./master.conf --port=9999.",
         /* usage      */ "master [--conf=./master.conf] [--port=port] [-d/--daemon].",
@@ -62,8 +62,8 @@ void add_master_command(std::shared_ptr<ccmd::c_command> cmd) {
     cmd->add_subcommand(master_cmd);
 }
 
-void add_meta_command(std::shared_ptr<ccmd::c_command> cmd) {
-    std::shared_ptr<ccmd::c_command> meta_cmd = std::make_shared<ccmd::c_command>(
+void add_meta_command(std::shared_ptr<ccmd::command> cmd) {
+    std::shared_ptr<ccmd::command> meta_cmd = std::make_shared<ccmd::command>(
         /* name       */ "meta",
         /* example    */ "example meta --conf=./meta.conf --port=10000.",
         /* usage      */ "meta [--master=127.0.0.1:9999] [--conf=./meta.conf] [--port=port] [-d/--daemon].",
@@ -77,8 +77,8 @@ void add_meta_command(std::shared_ptr<ccmd::c_command> cmd) {
     cmd->add_subcommand(meta_cmd);
 }
 
-void add_storage_command(std::shared_ptr<ccmd::c_command> cmd) {
-    std::shared_ptr<ccmd::c_command> storage_cmd = std::make_shared<ccmd::c_command>(
+void add_storage_command(std::shared_ptr<ccmd::command> cmd) {
+    std::shared_ptr<ccmd::command> storage_cmd = std::make_shared<ccmd::command>(
         /* name       */ "storage",
         /* example    */ "example storage --conf=./storage.conf --port=10001.",
         /* usage      */ "storage [--master=127.0.0.1:9999] [--conf=./storage.conf] [--port=port] [-d/--daemon].",
@@ -92,7 +92,7 @@ void add_storage_command(std::shared_ptr<ccmd::c_command> cmd) {
     cmd->add_subcommand(storage_cmd);
 }
 
-void master_run(std::shared_ptr<ccmd::c_command> cmd) {
+void master_run(std::shared_ptr<ccmd::command> cmd) {
     for (auto& arg : cmd->args()) {
         std::cout << arg << " ";
     }
@@ -102,7 +102,7 @@ void master_run(std::shared_ptr<ccmd::c_command> cmd) {
     std::cout << "conf: " << cmd->var<std::string>("conf") << std::endl;
 }
 
-void meta_run(std::shared_ptr<ccmd::c_command> cmd) {
+void meta_run(std::shared_ptr<ccmd::command> cmd) {
     for (auto& arg : cmd->args()) {
         std::cout << arg << " ";
     }
@@ -113,7 +113,7 @@ void meta_run(std::shared_ptr<ccmd::c_command> cmd) {
     std::cout << "conf: " << cmd->var<std::string>("conf") << std::endl;
 }
 
-void storage_run(std::shared_ptr<ccmd::c_command> cmd) {
+void storage_run(std::shared_ptr<ccmd::command> cmd) {
     for (auto& arg : cmd->args()) {
         std::cout << arg << " ";
     }

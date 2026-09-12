@@ -18,7 +18,7 @@
 #include "test_ccmd.h"
 
 TEST(test_int, test_int_flag) {
-    std::shared_ptr<ccmd::c_command> root_cmd = std::make_shared<ccmd::c_command>(
+    std::shared_ptr<ccmd::command> root_cmd = std::make_shared<ccmd::command>(
         /* name       */ "test",
         /* example    */ "test [options].",
         /* usage      */ "test [-p --port=port] [--id=id].",
@@ -44,7 +44,7 @@ TEST(test_int, test_int_flag) {
 }
 
 TEST(test_int, test_int_already_exist_flag) {
-    std::shared_ptr<ccmd::c_command> root_cmd = std::make_shared<ccmd::c_command>(
+    std::shared_ptr<ccmd::command> root_cmd = std::make_shared<ccmd::command>(
         /* name       */ "test",
         /* example    */ "test [options].",
         /* usage      */ "test [-p --port=port].",
@@ -57,7 +57,7 @@ TEST(test_int, test_int_already_exist_flag) {
 }
 
 TEST(test_int, test_int_not_found_flag) {
-    std::shared_ptr<ccmd::c_command> root_cmd = std::make_shared<ccmd::c_command>(
+    std::shared_ptr<ccmd::command> root_cmd = std::make_shared<ccmd::command>(
         /* name       */ "test",
         /* example    */ "test [options].",
         /* usage      */ "test [-p --port=port].",

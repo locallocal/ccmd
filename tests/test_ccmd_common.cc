@@ -18,10 +18,10 @@
 
 #include "ccmd.h"
 
-void test_run(std::shared_ptr<ccmd::c_command> cmd) { return; }
+void test_run(std::shared_ptr<ccmd::command> cmd) { return; }
 
 TEST(test_common, test_single_command) {
-    std::shared_ptr<ccmd::c_command> root_cmd = std::make_shared<ccmd::c_command>(
+    std::shared_ptr<ccmd::command> root_cmd = std::make_shared<ccmd::command>(
         /* name       */ "test",
         /* example    */ "test [options].",
         /* usage      */ "test [--host=host] [--port=port].",
@@ -38,14 +38,14 @@ TEST(test_common, test_single_command) {
 }
 
 TEST(test_common, test_multi_command) {
-    std::shared_ptr<ccmd::c_command> root_cmd = std::make_shared<ccmd::c_command>(
+    std::shared_ptr<ccmd::command> root_cmd = std::make_shared<ccmd::command>(
         /* name       */ "test",
         /* example    */ "test [subcommand].",
         /* usage      */ "test [subcommand].",
         /* help_long  */ "this is a multi test command.",
         /* help_short */ "test command.",
         /* run        */ test_run);
-    std::shared_ptr<ccmd::c_command> c00 = std::make_shared<ccmd::c_command>(
+    std::shared_ptr<ccmd::command> c00 = std::make_shared<ccmd::command>(
         /* name       */ "c00",
         /* example    */ "c00 [options].",
         /* usage      */ "c00 [--c00=c00]",
@@ -54,7 +54,7 @@ TEST(test_common, test_multi_command) {
         /* run        */ test_run);
     c00->var<std::string>("c00", "", "c00 command option.");
 
-    std::shared_ptr<ccmd::c_command> c01 = std::make_shared<ccmd::c_command>(
+    std::shared_ptr<ccmd::command> c01 = std::make_shared<ccmd::command>(
         /* name       */ "c01",
         /* example    */ "c01 [options].",
         /* usage      */ "c01 [--c01=c01]",
@@ -75,21 +75,21 @@ TEST(test_common, test_multi_command) {
 }
 
 TEST(test_common, test_cmd_exist) {
-    std::shared_ptr<ccmd::c_command> root_cmd = std::make_shared<ccmd::c_command>(
+    std::shared_ptr<ccmd::command> root_cmd = std::make_shared<ccmd::command>(
         /* name       */ "test",
         /* example    */ "test [subcommand].",
         /* usage      */ "test [subcommand].",
         /* help_long  */ "this is a test sub command already exist command.",
         /* help_short */ "test command.",
         /* run        */ test_run);
-    std::shared_ptr<ccmd::c_command> c00 = std::make_shared<ccmd::c_command>(
+    std::shared_ptr<ccmd::command> c00 = std::make_shared<ccmd::command>(
         /* name       */ "c00",
         /* example    */ "c00 [options].",
         /* usage      */ "c00 [--c00=c00]",
         /* help_long  */ "this is a subcommand of test.",
         /* help_short */ "c00 command.",
         /* run        */ test_run);
-    std::shared_ptr<ccmd::c_command> c01 = std::make_shared<ccmd::c_command>(
+    std::shared_ptr<ccmd::command> c01 = std::make_shared<ccmd::command>(
         /* name       */ "c00",
         /* example    */ "c00 [options].",
         /* usage      */ "c00 [--c00=c00]",
@@ -102,7 +102,7 @@ TEST(test_common, test_cmd_exist) {
 }
 
 TEST(test_common, test_cmd_args) {
-    std::shared_ptr<ccmd::c_command> root_cmd = std::make_shared<ccmd::c_command>(
+    std::shared_ptr<ccmd::command> root_cmd = std::make_shared<ccmd::command>(
         /* name       */ "test",
         /* example    */ "test [-v --version=false].",
         /* usage      */ "test [-v --version=true].",
@@ -119,8 +119,8 @@ TEST(test_common, test_cmd_args) {
 
 TEST(test_common, test_repeated_execute_resets_positional_args) {
     auto root_cmd =
-        std::make_shared<ccmd::c_command>("test", "test [options].", "test [options].",
-                                          "A command that can be executed more than once.", "test command.", test_run);
+        std::make_shared<ccmd::command>("test", "test [options].", "test [options].",
+                                        "A command that can be executed more than once.", "test command.", test_run);
 
     std::vector<std::string> first_arguments = {"test", "first"};
     root_cmd->execute(first_arguments);
@@ -144,21 +144,21 @@ TEST(test_common, test_const_string_api) {
     const std::string flag_usage = "server address";
     const std::string count_name = "count";
 
-    auto root_cmd = std::make_shared<ccmd::c_command>(name, example, usage, help_long, help_short, test_run);
+    auto root_cmd = std::make_shared<ccmd::command>(name, example, usage, help_long, help_short, test_run);
     root_cmd->var<std::string>(flag_name, default_value, flag_usage);
     root_cmd->var<int>(count_name, 2, "item count");
 
     const std::vector<std::string> arguments = {"test", "--host=0.0.0.0"};
     root_cmd->execute(arguments);
 
-    const ccmd::c_command& command = *root_cmd;
+    const ccmd::command& command = *root_cmd;
     EXPECT_EQ("0.0.0.0", command.var<std::string>(flag_name));
     EXPECT_EQ(2, command.var<int>(count_name));
     EXPECT_EQ(name, command.name());
 }
 
 TEST(test_common, test_invalid_execution_input) {
-    auto root_cmd = std::make_shared<ccmd::c_command>("test", "test.", "test.", "A test command.", "test command.");
+    auto root_cmd = std::make_shared<ccmd::command>("test", "test.", "test.", "A test command.", "test command.");
 
     const std::vector<std::string> empty_arguments;
     EXPECT_THROW(root_cmd->execute(empty_arguments), std::invalid_argument);
@@ -168,7 +168,7 @@ TEST(test_common, test_invalid_execution_input) {
 }
 
 TEST(test_common, test_cmd_not_found) {
-    std::shared_ptr<ccmd::c_command> root_cmd = std::make_shared<ccmd::c_command>(
+    std::shared_ptr<ccmd::command> root_cmd = std::make_shared<ccmd::command>(
         /* name       */ "test",
         /* example    */ "test [-v --version=false].",
         /* usage      */ "test [-v --version=true].",
@@ -176,7 +176,7 @@ TEST(test_common, test_cmd_not_found) {
         /* help_short */ "test command.",
         /* run        */ test_run);
     root_cmd->varp<bool>("version", "v", false, "show command version.");
-    std::shared_ptr<ccmd::c_command> sub_cmd = std::make_shared<ccmd::c_command>(
+    std::shared_ptr<ccmd::command> sub_cmd = std::make_shared<ccmd::command>(
         /* name       */ "sub",
         /* example    */ "sub [--host=host].",
         /* usage      */ "sub [--host=host].",
@@ -191,7 +191,7 @@ TEST(test_common, test_cmd_not_found) {
 }
 
 TEST(test_common, test_cmd_help_cmd) {
-    std::shared_ptr<ccmd::c_command> root_cmd = std::make_shared<ccmd::c_command>(
+    std::shared_ptr<ccmd::command> root_cmd = std::make_shared<ccmd::command>(
         /* name       */ "test",
         /* example    */ "test [-v --version=false].",
         /* usage      */ "test [-v --version=true].",
@@ -199,7 +199,7 @@ TEST(test_common, test_cmd_help_cmd) {
         /* help_short */ "test command.",
         /* run        */ test_run);
     root_cmd->varp<bool>("version", "v", false, "show command version.");
-    std::shared_ptr<ccmd::c_command> sub_cmd = std::make_shared<ccmd::c_command>(
+    std::shared_ptr<ccmd::command> sub_cmd = std::make_shared<ccmd::command>(
         /* name       */ "sub",
         /* example    */ "sub [--host=host].",
         /* usage      */ "sub [--host=host].",
@@ -214,7 +214,7 @@ TEST(test_common, test_cmd_help_cmd) {
 }
 
 TEST(test_common, test_cmd_help_long_flag) {
-    std::shared_ptr<ccmd::c_command> root_cmd = std::make_shared<ccmd::c_command>(
+    std::shared_ptr<ccmd::command> root_cmd = std::make_shared<ccmd::command>(
         /* name       */ "test",
         /* example    */ "test [-v --version=false].",
         /* usage      */ "test [-v --version=true].",
@@ -222,7 +222,7 @@ TEST(test_common, test_cmd_help_long_flag) {
         /* help_short */ "test command.",
         /* run        */ test_run);
     root_cmd->varp<bool>("version", "v", false, "show command version.");
-    std::shared_ptr<ccmd::c_command> sub_cmd = std::make_shared<ccmd::c_command>(
+    std::shared_ptr<ccmd::command> sub_cmd = std::make_shared<ccmd::command>(
         /* name       */ "sub",
         /* example    */ "sub [--host=host].",
         /* usage      */ "sub [--host=host].",
@@ -237,7 +237,7 @@ TEST(test_common, test_cmd_help_long_flag) {
 }
 
 TEST(test_common, test_cmd_help_short_flag) {
-    std::shared_ptr<ccmd::c_command> root_cmd = std::make_shared<ccmd::c_command>(
+    std::shared_ptr<ccmd::command> root_cmd = std::make_shared<ccmd::command>(
         /* name       */ "test",
         /* example    */ "test [-v --version=false].",
         /* usage      */ "test [-v --version=true].",
@@ -245,7 +245,7 @@ TEST(test_common, test_cmd_help_short_flag) {
         /* help_short */ "test command.",
         /* run        */ test_run);
     root_cmd->varp<bool>("version", "v", false, "show command version.");
-    std::shared_ptr<ccmd::c_command> sub_cmd = std::make_shared<ccmd::c_command>(
+    std::shared_ptr<ccmd::command> sub_cmd = std::make_shared<ccmd::command>(
         /* name       */ "sub",
         /* example    */ "sub [--host=host].",
         /* usage      */ "sub [--host=host].",
@@ -260,7 +260,7 @@ TEST(test_common, test_cmd_help_short_flag) {
 }
 
 TEST(test_common, test_subcmd_help_short_flag) {
-    std::shared_ptr<ccmd::c_command> root_cmd = std::make_shared<ccmd::c_command>(
+    std::shared_ptr<ccmd::command> root_cmd = std::make_shared<ccmd::command>(
         /* name       */ "test",
         /* example    */ "test [-v --version=false].",
         /* usage      */ "test [-v --version=true].",
@@ -268,7 +268,7 @@ TEST(test_common, test_subcmd_help_short_flag) {
         /* help_short */ "test command.",
         /* run        */ test_run);
     root_cmd->varp<bool>("version", "v", false, "show command version.");
-    std::shared_ptr<ccmd::c_command> sub_cmd = std::make_shared<ccmd::c_command>(
+    std::shared_ptr<ccmd::command> sub_cmd = std::make_shared<ccmd::command>(
         /* name       */ "sub",
         /* example    */ "sub [--host=host].",
         /* usage      */ "sub [--host=host].",
@@ -283,7 +283,7 @@ TEST(test_common, test_subcmd_help_short_flag) {
 }
 
 TEST(test_common, test_subcmd_help_no_ccmd) {
-    std::shared_ptr<ccmd::c_command> root_cmd = std::make_shared<ccmd::c_command>(
+    std::shared_ptr<ccmd::command> root_cmd = std::make_shared<ccmd::command>(
         /* name       */ "test",
         /* example    */ "test [-v --version=false].",
         /* usage      */ "test [-v --version=true].",
@@ -297,7 +297,7 @@ TEST(test_common, test_subcmd_help_no_ccmd) {
 }
 
 TEST(test_common, test_subcmd_help_not_found) {
-    std::shared_ptr<ccmd::c_command> root_cmd = std::make_shared<ccmd::c_command>(
+    std::shared_ptr<ccmd::command> root_cmd = std::make_shared<ccmd::command>(
         /* name       */ "test",
         /* example    */ "test [-v --version=false].",
         /* usage      */ "test [-v --version=true].",
@@ -305,7 +305,7 @@ TEST(test_common, test_subcmd_help_not_found) {
         /* help_short */ "test command.",
         /* run        */ test_run);
     root_cmd->varp<bool>("version", "v", false, "show command version.");
-    std::shared_ptr<ccmd::c_command> sub_cmd = std::make_shared<ccmd::c_command>(
+    std::shared_ptr<ccmd::command> sub_cmd = std::make_shared<ccmd::command>(
         /* name       */ "sub",
         /* example    */ "sub [--host=host].",
         /* usage      */ "sub [--host=host].",

@@ -62,8 +62,8 @@ struct flag_traits<mode> {
 
 namespace {
 
-std::shared_ptr<ccmd::c_command> make_command() {
-    return std::make_shared<ccmd::c_command>(
+std::shared_ptr<ccmd::command> make_command() {
+    return std::make_shared<ccmd::command>(
         /* name       */ "test",
         /* example    */ "test [options].",
         /* usage      */ "test [options].",
@@ -180,8 +180,8 @@ TEST(test_types, test_flag_file_yaml_later_arguments_override) {
 
 TEST(test_types, test_flag_file_in_subcommand) {
     auto root_cmd = make_command();
-    auto sub_cmd = std::make_shared<ccmd::c_command>("sub", "sub [options].", "sub [options].",
-                                                     "this is a subcommand of test.", "sub command.", test_run);
+    auto sub_cmd = std::make_shared<ccmd::command>("sub", "sub [options].", "sub [options].",
+                                                   "this is a subcommand of test.", "sub command.", test_run);
     sub_cmd->var("port", 1, "server port.");
     root_cmd->add_subcommand(sub_cmd);
 

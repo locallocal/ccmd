@@ -18,7 +18,7 @@
 #include "test_ccmd.h"
 
 TEST(test_bool, test_bool_flag) {
-    std::shared_ptr<ccmd::c_command> root_cmd = std::make_shared<ccmd::c_command>(
+    std::shared_ptr<ccmd::command> root_cmd = std::make_shared<ccmd::command>(
         /* name       */ "test",
         /* example    */ "test [options].",
         /* usage      */ "test [-v --version=false].",
@@ -45,7 +45,7 @@ TEST(test_bool, test_bool_flag) {
 }
 
 TEST(test_bool, test_bool_already_exist_flag) {
-    std::shared_ptr<ccmd::c_command> root_cmd = std::make_shared<ccmd::c_command>(
+    std::shared_ptr<ccmd::command> root_cmd = std::make_shared<ccmd::command>(
         /* name       */ "test",
         /* example    */ "test [options].",
         /* usage      */ "test [-v --version=false].",
@@ -58,7 +58,7 @@ TEST(test_bool, test_bool_already_exist_flag) {
 }
 
 TEST(test_bool, test_bool_not_found_flag) {
-    std::shared_ptr<ccmd::c_command> root_cmd = std::make_shared<ccmd::c_command>(
+    std::shared_ptr<ccmd::command> root_cmd = std::make_shared<ccmd::command>(
         /* name       */ "test",
         /* example    */ "test [options].",
         /* usage      */ "test [-v --version=false].",
@@ -72,8 +72,8 @@ TEST(test_bool, test_bool_not_found_flag) {
 }
 
 TEST(test_bool, test_flag_type_mismatch) {
-    auto root_cmd = std::make_shared<ccmd::c_command>("test", "test [options].", "test [options].", "test command.",
-                                                      "test command.");
+    auto root_cmd =
+        std::make_shared<ccmd::command>("test", "test [options].", "test [options].", "test command.", "test command.");
     root_cmd->var<bool>("verbose", false, "show verbose.");
 
     EXPECT_EXIT(root_cmd->var<int>("verbose"), testing::ExitedWithCode(EXIT_FAILURE), ".*different type.*");

@@ -18,4 +18,4 @@
 
 #include "ccmd.h"
 
-void test_run(std::shared_ptr<ccmd::c_command> cmd);
+void test_run(std::shared_ptr<ccmd::command> cmd);
