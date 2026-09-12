@@ -28,24 +28,24 @@ namespace detail {
 class flag_value_base;
 }
 
-class c_command : public std::enable_shared_from_this<c_command> {
+class command : public std::enable_shared_from_this<command> {
 public:
-    using run_callback = std::function<void(std::shared_ptr<c_command>)>;
+    using run_callback = std::function<void(std::shared_ptr<command>)>;
 
-    c_command(const std::string& name, const std::string& example, const std::string& usage,
-              const std::string& help_long, const std::string& help_short, run_callback run = run_callback());
-    c_command(const c_command& cmd) = delete;
-    c_command(c_command&& cmd) = delete;
-    c_command& operator=(const c_command& cmd) = delete;
-    c_command& operator=(c_command&& cmd) = delete;
-    ~c_command() = default;
+    command(const std::string& name, const std::string& example, const std::string& usage, const std::string& help_long,
+            const std::string& help_short, run_callback run = run_callback());
+    command(const command& cmd) = delete;
+    command(command&& cmd) = delete;
+    command& operator=(const command& cmd) = delete;
+    command& operator=(command&& cmd) = delete;
+    ~command() = default;
 
 public:
     std::vector<std::string>& args();
     const std::vector<std::string>& args() const;
     void execute(int argc, char* argv[]);
     void execute(const std::vector<std::string>& arguments);
-    void add_subcommand(std::shared_ptr<c_command> cmd);
+    void add_subcommand(std::shared_ptr<command> cmd);
     void print_help();
     void print_sub_command();
     void print_flag_set();
@@ -83,8 +83,8 @@ public:
     const std::string& help_long() const { return help_long_; }
     std::shared_ptr<cflag::flag_set> flag_set() { return flag_set_; }
     std::shared_ptr<const cflag::flag_set> flag_set() const { return flag_set_; }
-    std::map<std::string, std::shared_ptr<c_command>>& sub_commands() { return sub_commands_; }
-    const std::map<std::string, std::shared_ptr<c_command>>& sub_commands() const { return sub_commands_; }
+    std::map<std::string, std::shared_ptr<command>>& sub_commands() { return sub_commands_; }
+    const std::map<std::string, std::shared_ptr<command>>& sub_commands() const { return sub_commands_; }
 
 private:
     std::string name_;
@@ -95,7 +95,7 @@ private:
     std::shared_ptr<cflag::flag_set> flag_set_;
     run_callback run_;
 
-    std::map<std::string, std::shared_ptr<c_command>> sub_commands_;
+    std::map<std::string, std::shared_ptr<command>> sub_commands_;
     std::map<std::string, std::shared_ptr<detail::flag_value_base>> flag_values_;
 };
 

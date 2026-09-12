@@ -41,7 +41,7 @@ public:
 }  // namespace detail
 
 template <typename T>
-inline T c_command::var(const std::string& name) const {
+inline T command::var(const std::string& name) const {
     auto it = flag_values_.find(name);
     if (it == flag_values_.end()) {
         std::cerr << this->name() << " flag " << name << " not found." << std::endl;
@@ -57,13 +57,13 @@ inline T c_command::var(const std::string& name) const {
 }
 
 template <typename T>
-inline void c_command::var(const std::string& name, T default_value, const std::string& usage) {
+inline void command::var(const std::string& name, T default_value, const std::string& usage) {
     varp<T>(name, "", default_value, usage);
 }
 
 template <typename T>
-inline void c_command::varp(const std::string& name, const std::string& short_name, T default_value,
-                            const std::string& usage) {
+inline void command::varp(const std::string& name, const std::string& short_name, T default_value,
+                          const std::string& usage) {
     if (name.empty() && short_name.empty()) {
         throw std::invalid_argument("flag name and short name must not both be empty");
     }

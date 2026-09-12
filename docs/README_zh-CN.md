@@ -51,13 +51,13 @@ git submodule update --init --recursive
 #include <memory>
 
 int main(int argc, char *argv[]) {
-    auto command = std::make_shared<ccmd::c_command>(
+    auto command = std::make_shared<ccmd::command>(
         "server",
         "server --port=8080",
         "server [options]",
         "Start the example server.",
         "start a server",
-        [](const std::shared_ptr<ccmd::c_command> &active) {
+        [](const std::shared_ptr<ccmd::command> &active) {
             std::cout << "verbose: " << std::boolalpha
                       << active->var<bool>("verbose") << '\n';
             std::cout << "port: " << active->var<int>("port") << '\n';
@@ -86,7 +86,7 @@ cmake --build build --parallel
 通过 `add_subcommand` 注册子命令：
 
 ```cpp
-auto root = std::make_shared<ccmd::c_command>(
+auto root = std::make_shared<ccmd::command>(
     "server",
     "server start --port=8080",
     "server <command> [options]",
@@ -94,13 +94,13 @@ auto root = std::make_shared<ccmd::c_command>(
     "server management"
 );
 
-auto start = std::make_shared<ccmd::c_command>(
+auto start = std::make_shared<ccmd::command>(
     "start",
     "server start --port=8080",
     "server start [options]",
     "Start the server process.",
     "start the server",
-    [](const std::shared_ptr<ccmd::c_command> &active) {
+    [](const std::shared_ptr<ccmd::command> &active) {
         std::cout << "port: " << active->var<int>("port") << '\n';
     }
 );

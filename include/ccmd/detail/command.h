@@ -21,8 +21,8 @@
 #include <stdexcept>
 #include <utility>
 
-inline ccmd::c_command::c_command(const std::string& name, const std::string& example, const std::string& usage,
-                                  const std::string& help_long, const std::string& help_short, run_callback run)
+inline ccmd::command::command(const std::string& name, const std::string& example, const std::string& usage,
+                              const std::string& help_long, const std::string& help_short, run_callback run)
     : name_(name),
       usage_(usage),
       example_(example),
@@ -35,11 +35,11 @@ inline ccmd::c_command::c_command(const std::string& name, const std::string& ex
     }
 }
 
-inline std::vector<std::string>& ccmd::c_command::args() { return flag_set_->args(); }
+inline std::vector<std::string>& ccmd::command::args() { return flag_set_->args(); }
 
-inline const std::vector<std::string>& ccmd::c_command::args() const { return flag_set_->args(); }
+inline const std::vector<std::string>& ccmd::command::args() const { return flag_set_->args(); }
 
-inline void ccmd::c_command::execute(int argc, char* argv[]) {
+inline void ccmd::command::execute(int argc, char* argv[]) {
     if (argc <= 0 || argv == nullptr) {
         throw std::invalid_argument("execute requires at least a program name");
     }
@@ -55,7 +55,7 @@ inline void ccmd::c_command::execute(int argc, char* argv[]) {
     execute(arguments);
 }
 
-inline void ccmd::c_command::execute(const std::vector<std::string>& arguments) {
+inline void ccmd::command::execute(const std::vector<std::string>& arguments) {
     if (arguments.empty()) {
         throw std::invalid_argument("execute requires at least a program name");
     }
@@ -64,7 +64,7 @@ inline void ccmd::c_command::execute(const std::vector<std::string>& arguments) 
     parse_(mutable_arguments);
 }
 
-inline void ccmd::c_command::add_subcommand(std::shared_ptr<ccmd::c_command> cmd) {
+inline void ccmd::command::add_subcommand(std::shared_ptr<ccmd::command> cmd) {
     if (cmd == nullptr) {
         throw std::invalid_argument("subcommand must not be null");
     }
@@ -77,7 +77,7 @@ inline void ccmd::c_command::add_subcommand(std::shared_ptr<ccmd::c_command> cmd
     sub_commands_[cmd->name()] = cmd;
 }
 
-inline void ccmd::c_command::print_help() {
+inline void ccmd::command::print_help() {
     std::cout << name() << " - " << help_short() << std::endl;
     if (!help_long().empty() && help_long() != help_short()) {
         std::cout << std::endl << help_long() << std::endl;
@@ -97,7 +97,7 @@ inline void ccmd::c_command::print_help() {
     print_flag_set();
 }
 
-inline void ccmd::c_command::print_sub_command() {
+inline void ccmd::command::print_sub_command() {
     std::size_t width = 0;
     for (const auto& entry : sub_commands_) {
         width = std::max(width, entry.second->name().size());
@@ -108,14 +108,14 @@ inline void ccmd::c_command::print_sub_command() {
     }
 }
 
-inline void ccmd::c_command::print_flag_set() {
+inline void ccmd::command::print_flag_set() {
     // Mirrors the " -x  --name[type] usage(default)" rows that cflag prints.
     // help/-h are reserved in cflag and handled by ccmd, so they are listed here.
     std::cout << " -h  --help[bool] show help information.(false)" << std::endl;
     flag_set_->print_flags();
 }
 
-inline void ccmd::c_command::parse_(std::vector<std::string>& arguments) {
+inline void ccmd::command::parse_(std::vector<std::string>& arguments) {
     if (arguments.empty()) {
         throw std::invalid_argument("execute requires at least a program name");
     }
@@ -148,7 +148,7 @@ inline void ccmd::c_command::parse_(std::vector<std::string>& arguments) {
     it->second->parse_(next_arguments);
 }
 
-inline void ccmd::c_command::check_help_(std::vector<std::string>& arguments) {
+inline void ccmd::command::check_help_(std::vector<std::string>& arguments) {
     if (arguments.size() < 2) {
         return;
     }
